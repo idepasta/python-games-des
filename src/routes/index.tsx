@@ -71,7 +71,7 @@ function Code({ title, code }: { title: string; code: string }) {
 }
 
 function LessonView({ n }: { n: number }) {
-  const l = lessons[n]; const Game = games[n];
+  const l = lessons[n]!; const Game = games[n]!;
   return (
     <main key={n} className="mx-auto max-w-5xl px-4 py-6 space-y-6 animate-in fade-in slide-in-from-right-4">
       <div className="flex items-center gap-3">
