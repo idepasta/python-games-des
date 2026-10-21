@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { lessons } from "@/data/lessons";
 import { games } from "@/components/games";
+import { ExtrasProvider } from "@/components/game-extras";
+import { customizedPython } from "@/lib/extras";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -10,6 +12,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "10 interactive mini-games showing how everyday machines think in Python." },
       { property: "og:title", content: "Code the World — Python Games for Kids" },
       { property: "og:description", content: "Play with traffic lights, radars and fridges, then read the Python behind them." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Index,
@@ -71,13 +75,15 @@ function Code({ title, code }: { title: string; code: string }) {
 }
 
 function LessonView({ n }: { n: number }) {
-  const l = lessons[n]!; const Game = games[n]!;
+  const l = lessons[n]; const Game = games[n];
+  if (!l || !Game) return null;
   return (
     <main key={n} className="mx-auto max-w-5xl px-4 py-6 space-y-6 animate-in fade-in slide-in-from-right-4">
       <div className="flex items-center gap-3">
         <span className="text-5xl">{l.emoji}</span>
         <div><div className="font-display text-sm text-muted-foreground">Example {n + 1}</div><h2 className="text-3xl md:text-4xl font-bold leading-tight">{l.title}</h2></div>
       </div>
+      <ExtrasProvider key={n} n={n}>{(settings, inputs) => { const py = customizedPython(n, settings, inputs); return (<>
       <div className="grid md:grid-cols-2 gap-6">
         <section className="chunky rounded-2xl bg-card p-5">
           <h3 className="text-xl font-bold mb-2">🔍 How it works in reality</h3>
@@ -88,8 +94,14 @@ function LessonView({ n }: { n: number }) {
           <Game />
         </section>
       </div>
-      <Code title="Phase 1: The Minimal Concept" code={l.p1} />
-      <Code title="Phase 2: The Realistic Simulation" code={l.p2} />
+      <Code title="Phase 1: The Minimal Concept" code={py.p1} />
+      <Code title="Phase 2: The Realistic Simulation" code={py.p2} />
+      <details className="space-y-4">
+        <summary className="cursor-pointer font-display font-semibold">Original Python examples</summary>
+        <Code title="Original: The Minimal Concept" code={l.p1} />
+        <Code title="Original: The Realistic Simulation" code={l.p2} />
+      </details>
+      </>); }}</ExtrasProvider>
       {l.concepts.map((c, k) => (
         <div key={k} className="chunky rounded-2xl bg-secondary p-5"><b className="font-display">🧠 CS Concept Unlocked:</b> {c}</div>
       ))}
