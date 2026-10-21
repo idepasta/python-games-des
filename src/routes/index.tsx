@@ -83,7 +83,7 @@ function LessonView({ n }: { n: number }) {
         <span className="text-5xl">{l.emoji}</span>
         <div><div className="font-display text-sm text-muted-foreground">Example {n + 1}</div><h2 className="text-3xl md:text-4xl font-bold leading-tight">{l.title}</h2></div>
       </div>
-      <ExtrasProvider n={n}>{(settings, inputs) => { const py = customizedPython(n, settings, inputs); return (<>
+      <ExtrasProvider key={n} n={n}>{(settings, inputs) => { const py = customizedPython(n, settings, inputs); return (<>
       <div className="grid md:grid-cols-2 gap-6">
         <section className="chunky rounded-2xl bg-card p-5">
           <h3 className="text-xl font-bold mb-2">🔍 How it works in reality</h3>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { useExtras } from "@/components/game-extras";
 import { extendedRange, detectsMetal, dispenserDose, radarFine, doorsTriggered, extendedThermostat, plantStep, vendingResult, fridgeAlarm, streetBrightness } from "@/lib/extras";
 
@@ -15,7 +16,7 @@ export function Console({ lines }: { lines: string[] }) {
 }
 function Btn({ children, onClick, tone = "primary", disabled }: { children: ReactNode; onClick: () => void; tone?: "primary" | "accent" | "secondary"; disabled?: boolean }) {
   const t = tone === "primary" ? "bg-primary text-primary-foreground" : tone === "accent" ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground";
-  return <button disabled={disabled} onClick={onClick} className={`press rounded-xl px-4 py-2 font-display font-semibold disabled:opacity-40 ${t}`}>{children}</button>;
+  return <Button disabled={disabled} onClick={onClick} className={`press rounded-xl px-4 py-2 font-display font-semibold disabled:opacity-40 h-auto whitespace-normal ${t}`}>{children}</Button>;
 }
 function Slider({ label, value, min, max, onChange, unit }: { label: string; value: number; min: number; max: number; onChange: (n: number) => void; unit: string }) {
   return (<label className="block">
