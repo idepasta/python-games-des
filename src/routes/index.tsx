@@ -75,7 +75,8 @@ function Code({ title, code }: { title: string; code: string }) {
 }
 
 function LessonView({ n }: { n: number }) {
-  const l = lessons[n]!; const Game = games[n]!;
+  const l = lessons[n]; const Game = games[n];
+  if (!l || !Game) return null;
   return (
     <main key={n} className="mx-auto max-w-5xl px-4 py-6 space-y-6 animate-in fade-in slide-in-from-right-4">
       <div className="flex items-center gap-3">
@@ -93,10 +94,13 @@ function LessonView({ n }: { n: number }) {
           <Game />
         </section>
       </div>
-      <Code title="Phase 1: The Minimal Concept" code={l.p1} />
-      <Code title="Phase 2: The Realistic Simulation" code={l.p2} />
-      <Code title="Phase 3: Your Custom Machine (changes with the extras)" code={py.p1} />
-      <Code title="Phase 4: Custom Simulation with Functions" code={py.p2} />
+      <Code title="Phase 1: The Minimal Concept" code={py.p1} />
+      <Code title="Phase 2: The Realistic Simulation" code={py.p2} />
+      <details className="space-y-4">
+        <summary className="cursor-pointer font-display font-semibold">Original Python examples</summary>
+        <Code title="Original: The Minimal Concept" code={l.p1} />
+        <Code title="Original: The Realistic Simulation" code={l.p2} />
+      </details>
       </>); }}</ExtrasProvider>
       {l.concepts.map((c, k) => (
         <div key={k} className="chunky rounded-2xl bg-secondary p-5"><b className="font-display">🧠 CS Concept Unlocked:</b> {c}</div>
