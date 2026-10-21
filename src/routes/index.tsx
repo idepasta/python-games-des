@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { lessons } from "@/data/lessons";
 import { games } from "@/components/games";
+import { ExtrasProvider } from "@/components/game-extras";
+import { customizedPython } from "@/lib/extras";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -10,6 +12,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "10 interactive mini-games showing how everyday machines think in Python." },
       { property: "og:title", content: "Code the World — Python Games for Kids" },
       { property: "og:description", content: "Play with traffic lights, radars and fridges, then read the Python behind them." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Index,
@@ -78,6 +82,7 @@ function LessonView({ n }: { n: number }) {
         <span className="text-5xl">{l.emoji}</span>
         <div><div className="font-display text-sm text-muted-foreground">Example {n + 1}</div><h2 className="text-3xl md:text-4xl font-bold leading-tight">{l.title}</h2></div>
       </div>
+      <ExtrasProvider n={n}>{(settings, inputs) => { const py = customizedPython(n, settings, inputs); return (<>
       <div className="grid md:grid-cols-2 gap-6">
         <section className="chunky rounded-2xl bg-card p-5">
           <h3 className="text-xl font-bold mb-2">🔍 How it works in reality</h3>
@@ -90,6 +95,9 @@ function LessonView({ n }: { n: number }) {
       </div>
       <Code title="Phase 1: The Minimal Concept" code={l.p1} />
       <Code title="Phase 2: The Realistic Simulation" code={l.p2} />
+      <Code title="Phase 3: Your Custom Machine (changes with the extras)" code={py.p1} />
+      <Code title="Phase 4: Custom Simulation with Functions" code={py.p2} />
+      </>); }}</ExtrasProvider>
       {l.concepts.map((c, k) => (
         <div key={k} className="chunky rounded-2xl bg-secondary p-5"><b className="font-display">🧠 CS Concept Unlocked:</b> {c}</div>
       ))}
