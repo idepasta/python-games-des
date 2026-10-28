@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { lessons } from "@/data/lessons";
 import { games } from "@/components/games";
@@ -60,7 +60,10 @@ function Title({ onStart }: { onStart: () => void }) {
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-5 gap-3">
         {lessons.map((l) => <div key={l.title} className="chunky rounded-xl bg-card p-3 text-3xl">{l.emoji}<div className="text-xs font-display mt-1">{l.title}</div></div>)}
       </div>
-      <button onClick={onStart} className="press mt-10 rounded-2xl bg-accent text-accent-foreground px-8 py-4 text-2xl font-display font-bold">Let's play! ▶</button>
+      <div className="mt-10 flex flex-wrap justify-center gap-4">
+        <button onClick={onStart} className="press rounded-2xl bg-accent text-accent-foreground px-8 py-4 text-2xl font-display font-bold">Let's play! ▶</button>
+        <Link to="/hacker" className="press rounded-2xl bg-code text-code-foreground px-8 py-4 text-2xl font-display font-bold">🕵️ Hacker Missions</Link>
+      </div>
     </section>
   );
 }
