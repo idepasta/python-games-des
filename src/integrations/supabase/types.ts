@@ -14,13 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      mystery_players: {
+        Row: {
+          created_at: string
+          id: string
+          revision: number
+          state: Json
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          revision?: number
+          state: Json
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          revision?: number
+          state?: Json
+          token_hash?: string
+        }
+        Relationships: []
+      }
+      mystery_rankings: {
+        Row: {
+          attempts: number
+          bonuses: number
+          completed: number
+          correct: number
+          id: string
+          name: string
+          score: number
+          streak: number
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          bonuses?: number
+          completed?: number
+          correct?: number
+          id: string
+          name: string
+          score?: number
+          streak?: number
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          bonuses?: number
+          completed?: number
+          correct?: number
+          id?: string
+          name?: string
+          score?: number
+          streak?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mystery_rankings_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "mystery_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      commit_mystery_action: {
+        Args: { p_id: string; p_revision: number; p_state: Json }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
