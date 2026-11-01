@@ -213,6 +213,19 @@ reset_button = False
   ],
 };
 
+const TIC_TAC_TOE_PARTS = [
+  `# Step 1: Name the game that will appear on the phone.\ntitle = "Tic-Tac-Toe"\n`,
+  `\n# Step 2: Choose a mark for each player.\nx_mark = "X"\no_mark = "O"\n`,
+  `\n# Step 3: Make a 3 by 3 board.\ngrid_size = 3\n`,
+  `\n# Step 4: Let players tap squares to take turns.\nturns_on = True\n`,
+  `\n# Step 5: Check for three in a row.\ncheck_winner = True\n`,
+  `\n# Step 6: Add a button that starts a new game.\nreset_button = True\n`,
+];
+
+export function ticTacToeSolution(stepIndex: number): string {
+  return TIC_TAC_TOE_PARTS.slice(0, stepIndex + 1).join("");
+}
+
 export function starterCode(mission: CodingMission, stepIndex = 0): string {
   return mission.steps.slice(0, stepIndex + 1).map((step) => step.appendCode).join("");
 }

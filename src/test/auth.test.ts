@@ -10,12 +10,13 @@ import {
   USERNAME_HINT,
   validateUsername,
 } from "@/lib/auth/store";
-import { isAdminPath, isPublicPath } from "@/lib/auth/guard";
+import { isAdminPath, isPublicPath, loadSession } from "@/lib/auth/guard";
 import { commonErrors, playingMix } from "@/lib/auth/analytics";
 import { awardScore, beginStep, completionPercent, endStep, errorRate, GAME_POINTS, logError, STEP_POINTS, studentStatus } from "@/lib/auth/scoring";
 import { ADMIN_PASSWORD, ADMIN_USERNAME, ensureAdminAccount } from "@/lib/auth/seed-admin";
-import { destination, findUser, updateUser } from "@/lib/auth/store";
-import { emptyProgress, PUBLIC_PATHS } from "@/lib/auth/types";
+import { missionLocked } from "@/lib/mission-lock";
+import { createSessionToken, destination, findUser, updateUser } from "@/lib/auth/store";
+import { AUTH_COOKIE, emptyProgress, PUBLIC_PATHS } from "@/lib/auth/types";
 
 beforeEach(() => {
   localStorage.clear();
@@ -162,6 +163,13 @@ describe("scoring and tutor account", () => {
     expect(commonErrors([saved])[0]?.value).toBe(1);
   });
 
+  it("opens every mission for the tutor and keeps the student sequence", () => {
+    expect(missionLocked("admin", 4, false)).toBe(false);
+    expect(missionLocked("student", 0, false)).toBe(false);
+    expect(missionLocked("student", 1, false)).toBe(true);
+    expect(missionLocked("student", 1, true)).toBe(false);
+  });
+
   it("seeds the tutor account", async () => {
     await ensureAdminAccount();
     const tutor = await loginStudent(ADMIN_USERNAME, ADMIN_PASSWORD);
@@ -170,5 +178,20 @@ describe("scoring and tutor account", () => {
     expect((await registerStudent("admin", "pass", "A1")).ok).toBe(false);
     expect((await registerStudent("nope", "pass", "A1")).ok).toBe(false);
     expect((await registerStudent("Ann-Lee", "pass", "Z9")).ok).toBe(false);
+  });
+
+  it("keeps a signed tutor session when browser storage is unavailable", async () => {
+    await ensureAdminAccount();
+    const tutor = findUser(ADMIN_USERNAME)!;
+    document.cookie = `${AUTH_COOKIE}=${encodeURIComponent(await createSessionToken(tutor))}; Path=/`;
+    const storage = globalThis.localStorage;
+    Object.defineProperty(globalThis, "localStorage", { value: undefined, configurable: true });
+    try {
+      const session = await loadSession();
+      expect(session?.username).toBe(ADMIN_USERNAME);
+      expect(session?.role).toBe("admin");
+    } finally {
+      Object.defineProperty(globalThis, "localStorage", { value: storage, configurable: true });
+    }
   });
 });

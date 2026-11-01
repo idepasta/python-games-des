@@ -17,13 +17,24 @@ export class GameCrash extends Error {
 }
 
 export type GameView = {
-  kind: "miner" | "platformer";
+  kind: "miner" | "platformer" | "flappy" | "city" | "dino";
   status: "playing" | "win" | "crash";
   message: string;
   frames: MinerFrame[];
+  dino: DinoFrame[];
   level: PlatformLevel | null;
   commands: PlatformCommand[];
   samples: PlatformSample[];
+};
+
+export type DinoObstacle = { x: number; kind: "cactus" | "bird" | "goal" };
+
+export type DinoFrame = {
+  x: number;
+  lift: number;
+  crouch: number;
+  leg: number;
+  obstacles: DinoObstacle[];
 };
 
 export type MinerFrame = {
@@ -83,7 +94,7 @@ type Stmt =
   | { type: "pass" };
 
 const KEYWORDS = new Set(["if", "elif", "else", "while", "for", "in", "import", "True", "False", "None", "and", "or", "not", "break", "pass"]);
-const GAME_FNS = new Set(["move_up", "move_down", "move_left", "move_right", "mine_block", "place_block", "block_ahead", "run", "jump", "wait"]);
+const GAME_FNS = new Set(["move_up", "move_down", "move_left", "move_right", "mine_block", "place_block", "block_ahead", "run", "jump", "wait", "flap", "coast", "glide", "row", "gap_ahead", "ahead", "shoot", "duck"]);
 const CMP = new Set(["==", "!=", "<", ">", "<=", ">=", "in"]);
 const BANNED = new Set(["eval", "exec", "open", "compile", "__import__", "globals", "locals", "exit", "quit"]);
 
@@ -617,7 +628,7 @@ function* evalCall(expr: Extract<Expr, { type: "call" }>, env: Env, ctx: RunCtx)
       throw new PyError("len() needs text or a list.");
     }
     if (GAME_FNS.has(name)) {
-      if (!ctx.hooks.game) throw new PyError(`${name}() works in the miner and platformer missions.`);
+      if (!ctx.hooks.game) throw new PyError(`${name}() works in the canvas game missions.`);
       return ctx.hooks.game(name, args);
     }
     throw new PyError(`I do not know the function ${name}.`);

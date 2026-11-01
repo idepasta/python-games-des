@@ -12,9 +12,9 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { StudentBar } from "@/components/auth/student-bar";
 import { enforceAuth, isPublicPath } from "@/lib/auth/guard";
+import { ensureAdminAccount } from "@/lib/auth/seed-admin";
 import type { SessionPayload } from "@/lib/auth/types";
 
 function NotFoundComponent() {
@@ -42,9 +42,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -88,12 +85,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient; sess
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Code the World — Interactive Python" },
       { name: "description", content: "Discover Python through ten interactive everyday machines." },
-      { name: "author", content: "Lovable" },
+      { name: "author", content: "Code the World" },
       { property: "og:title", content: "Code the World — Interactive Python" },
       { property: "og:description", content: "Discover Python through ten interactive everyday machines." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -129,6 +125,10 @@ function RootComponent() {
   const { queryClient, session } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const showBar = Boolean(session) && !isPublicPath(pathname) && pathname !== "/revive-code";
+
+  useEffect(() => {
+    void ensureAdminAccount();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -1,6 +1,7 @@
 import { redirect } from "@tanstack/react-router";
 import { ensureAdminAccount } from "@/lib/auth/seed-admin";
 import { AUTH_COOKIE, PUBLIC_PATHS, type SessionPayload } from "@/lib/auth/types";
+import { requestCookieHeader } from "@/lib/auth/request-cookie";
 import { destination, findUser, parseSessionToken, readCookie } from "@/lib/auth/store";
 
 export function isPublicPath(pathname: string): boolean {
@@ -13,13 +14,14 @@ export function isAdminPath(pathname: string): boolean {
 
 function cookieHeaderFromRequest(): string | null {
   if (typeof document !== "undefined") return document.cookie;
-  return null;
+  return requestCookieHeader();
 }
 
 export async function loadSession(): Promise<SessionPayload | null> {
   const token = readCookie(AUTH_COOKIE, cookieHeaderFromRequest());
   const session = await parseSessionToken(token);
   if (!session) return null;
+  if (typeof localStorage === "undefined") return session;
   const user = findUser(session.username);
   if (!user || user.id !== session.userId) return null;
   return { ...session, role: user.role, reviveAcknowledged: user.reviveAcknowledged };

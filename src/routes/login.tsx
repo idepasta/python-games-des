@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { AuthShell, Field } from "@/components/auth/auth-shell";
+import { ensureAdminAccount } from "@/lib/auth/seed-admin";
 import { destination, loginStudent } from "@/lib/auth/store";
 
 export const Route = createFileRoute("/login")({
@@ -29,6 +30,7 @@ function LoginPage() {
     e.preventDefault();
     setBusy(true);
     setError("");
+    await ensureAdminAccount();
     const result = await loginStudent(username, password);
     setBusy(false);
     if (!result.ok) {

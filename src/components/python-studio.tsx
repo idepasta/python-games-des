@@ -1,13 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouteContext } from "@tanstack/react-router";
 import { CodeEditor } from "@/components/code-editor";
 import { PythonPhone } from "@/components/python-phone";
+import { StepSwitcher } from "@/components/step-switcher";
 import { hooksForGame } from "@/lib/canvas-games";
 import { nextPythonCode, validatePythonStep, type PythonMission, type PythonStep } from "@/lib/python-missions";
+import { pythonStepSolution } from "@/lib/python-solutions";
 import { PySession } from "@/lib/python-vm";
 import { awardScore, logError, logLevelCleared } from "@/lib/auth/scoring";
 import { readProgress, writeProgress } from "@/lib/auth/store";
 import { useStepTelemetry } from "@/hooks/use-step-telemetry";
+import { showHintButton, showSolution } from "@/lib/hint-gate";
+import { stepReachable } from "@/lib/mission-lock";
 
 export function readDoneMissions(username?: string): string[] {
   if (!username) return [];
@@ -28,14 +32,20 @@ function gameHooks(step: PythonStep | undefined) {
 export function PythonStudio({ mission, onBack }: { mission: PythonMission; onBack: () => void }) {
   const { session: student } = useRouteContext({ from: "__root__" });
   const [step, setStep] = useState(0);
-  const [code, setCode] = useState(mission.steps[0]!.starterCode);
+  const [codes, setCodes] = useState(() => mission.steps.map((item) => item.starterCode));
   const [checked, setChecked] = useState(false);
-  const [hint, setHint] = useState(false);
+  const [hintOpen, setHintOpen] = useState(() => mission.steps.map(() => false));
+  const [misses, setMisses] = useState(() => mission.steps.map(() => 0));
+  const missesRef = useRef(misses);
+  const [revealed, setRevealed] = useState(() => mission.steps.map(() => false));
+  const [passed, setPassed] = useState(() => mission.steps.map(() => false));
   const [done, setDone] = useState(false);
   const [overlay, setOverlay] = useState<Overlay>(null);
-  const [session, setSession] = useState(() => new PySession(code, gameHooks(mission.steps[0])));
+  const [session, setSession] = useState(() => new PySession(mission.steps[0]!.starterCode, gameHooks(mission.steps[0])));
   const [, bump] = useState(0);
   const current = mission.steps[step]!;
+  const code = codes[step] ?? current.starterCode;
+  const stepMisses = misses[step] ?? 0;
 
   useEffect(() => { setSession(new PySession(code, gameHooks(current))); }, [code, current]);
   const result = validatePythonStep(current, code);
@@ -83,15 +93,47 @@ export function PythonStudio({ mission, onBack }: { mission: PythonMission; onBa
   }, [session, student?.role, student?.username, mission.id, mission.title, current.id, current.title, code]);
 
   const onCode = (value: string) => {
-    setCode(value);
+    setCodes((prev) => prev.map((item, i) => (i === step ? value : item)));
+    setChecked(false);
+    setOverlay(null);
+  };
+
+  const go = (index: number) => {
+    if (!stepReachable(index, step, passed) || index === step) return;
+    setCodes((prev) => {
+      const next = prev.map((item, i) => (i === step ? code : item));
+      const starter = mission.steps[index]?.starterCode;
+      if (index === step + 1 && starter !== undefined && next[index] === starter) {
+        next[index] = nextPythonCode(code, mission, index);
+      }
+      return next;
+    });
+    setStep(index);
     setChecked(false);
     setOverlay(null);
   };
 
   const check = () => {
     setChecked(true);
-    setOverlay({ kind: result.ok ? "success" : "fail", text: result.message });
-    if (student?.role === "student" && !result.ok) {
+    if (result.ok) {
+      setPassed((prev) => prev.map((flag, i) => (i === step ? true : flag)));
+      setOverlay({ kind: "success", text: result.message });
+      if (student?.role === "student" && !revealed[step]) {
+        awardScore(student.username, {
+          kind: "step_passed",
+          area: "python",
+          missionId: mission.id,
+          missionTitle: mission.title,
+          stepId: current.id,
+          stepTitle: current.title,
+        });
+      }
+      return;
+    }
+    const count = (missesRef.current[step] ?? 0) + 1;
+    missesRef.current = missesRef.current.map((n, i) => (i === step ? count : n));
+    setMisses(missesRef.current);
+    if (student?.role === "student") {
       logError(student.username, {
         area: "python",
         missionId: mission.id,
@@ -103,22 +145,23 @@ export function PythonStudio({ mission, onBack }: { mission: PythonMission; onBa
         errorType: "validation",
       });
     }
+    if (showSolution(count)) {
+      const answer = pythonStepSolution(mission.id, current.id);
+      setCodes((prev) => prev.map((item, i) => (i === step ? answer : item)));
+      setRevealed((prev) => prev.map((flag, i) => (i === step ? true : flag)));
+      setPassed((prev) => prev.map((flag, i) => (i === step ? true : flag)));
+      setOverlay({ kind: "success", text: "Here is the whole solution for this step." });
+      return;
+    }
+    setOverlay({ kind: "fail", text: result.message });
   };
 
-  const next = () => {
+  const finish = () => {
     if (!result.ok) return;
     if (student?.role === "student") {
-      awardScore(student.username, {
-        kind: "step_passed",
-        area: "python",
-        missionId: mission.id,
-        missionTitle: mission.title,
-        stepId: current.id,
-        stepTitle: current.title,
-      });
-      if (last) {
-        const ids = readDoneMissions(student.username);
-        if (!ids.includes(mission.id)) writeDoneMissions(student.username, [...ids, mission.id]);
+      const ids = readDoneMissions(student.username);
+      if (!ids.includes(mission.id)) writeDoneMissions(student.username, [...ids, mission.id]);
+      if (!revealed[step]) {
         awardScore(student.username, {
           kind: "game_completed",
           area: "python",
@@ -129,52 +172,44 @@ export function PythonStudio({ mission, onBack }: { mission: PythonMission; onBa
         });
       }
     }
-    if (last) {
-      setDone(true);
-      setOverlay({ kind: "success", text: `Mission complete! ${mission.title} is ready to play.` });
-      return;
-    }
-    const nextIndex = step + 1;
-    setCode(nextPythonCode(code, mission, nextIndex));
-    setStep(nextIndex);
-    setChecked(false);
-    setHint(false);
-    setOverlay(null);
+    setDone(true);
+    setOverlay({ kind: "success", text: `Mission complete! ${mission.title} is ready to play.` });
   };
 
   return (
     <div className="min-h-screen bg-background pb-10">
       <header className="border-b-[3px] border-foreground bg-[#4d4d4d] text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
             <button onClick={onBack} className="text-xs uppercase tracking-wide text-white/70 hover:text-white">← All missions</button>
             <h1 className="font-display text-2xl font-bold">{mission.emoji} {mission.title}</h1>
           </div>
           <div className="flex flex-wrap gap-2">
             <button onClick={check} className="press rounded-lg bg-go px-4 py-2 font-display font-bold text-code">Check Step</button>
-            <button
-              disabled={!result.ok || (!checked && !done)}
-              onClick={next}
-              className="press rounded-lg bg-accent px-4 py-2 font-display font-bold text-accent-foreground disabled:opacity-40"
-            >
-              {last ? "Finish Mission" : "Next Step"}
-            </button>
+            {last && (
+              <button
+                disabled={!result.ok || (!checked && !revealed[step] && !done)}
+                onClick={finish}
+                className="press rounded-lg bg-accent px-4 py-2 font-display font-bold text-accent-foreground disabled:opacity-40"
+              >
+                Finish Mission
+              </button>
+            )}
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-4">
+      <div className="mx-auto max-w-[1360px] px-4 py-4">
         <p className="mb-4 text-muted-foreground">{mission.story}</p>
-        <div className="mb-3 flex gap-1" aria-label="Mission progress">
-          {mission.steps.map((item, i) => (
-            <div key={item.id} className={`h-2 flex-1 rounded ${i < step || done ? "bg-go" : i === step ? "bg-warn" : "bg-off/40"}`} />
-          ))}
-        </div>
+        <StepSwitcher titles={mission.steps.map((item) => item.title)} index={step} passed={passed} onGo={go} />
         <section className="chunky mb-4 rounded-2xl bg-card p-4">
           <div className="font-display text-sm text-muted-foreground">Step {step + 1} / {mission.steps.length}: {current.title}</div>
           <p className="mt-1 text-lg">{current.prompt}</p>
-          <button onClick={() => setHint(true)} className="mt-2 text-sm font-display font-bold text-primary">Need a hint?</button>
-          {hint && <p className="mt-2 rounded-lg bg-warn/30 p-3">💡 {current.hint}</p>}
+          {showHintButton(stepMisses) && (
+            <button onClick={() => setHintOpen((prev) => prev.map((flag, i) => (i === step ? true : flag)))} className="mt-2 text-sm font-display font-bold text-primary">Need a hint?</button>
+          )}
+          {hintOpen[step] && <p className="mt-2 rounded-lg bg-warn/30 p-3">💡 {current.hint}</p>}
+          {revealed[step] && <p className="mt-2 rounded-lg bg-secondary p-3 font-display font-bold">Here is the whole solution for this step. It is in the editor.</p>}
           {checked && (
             <p className={`mt-2 font-display font-bold ${result.ok ? "text-go" : "text-stop"}`}>
               {result.ok ? `✅ ${result.message}` : `❌ ${result.message}`}
@@ -182,20 +217,24 @@ export function PythonStudio({ mission, onBack }: { mission: PythonMission; onBa
           )}
         </section>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <section className="min-h-[520px]">
+        <div className="grid items-stretch gap-4 lg:grid-cols-2">
+          <section className="flex min-h-[560px] flex-col">
             <div className="mb-2 font-display font-bold">Left: Python code</div>
-            <CodeEditor value={code} onChange={onCode} />
+            <div className="min-h-0 flex-1">
+              <CodeEditor value={code} onChange={onCode} />
+            </div>
           </section>
-          <section>
+          <section className="flex min-h-[560px] flex-col">
             <div className="mb-2 font-display font-bold">Right: live phone preview</div>
-            <PythonPhone
-              title={mission.title}
-              session={session}
-              overlay={overlay}
-              onClearOverlay={() => setOverlay(null)}
-              onReply={(value) => { session.provideInput(value); bump((n) => n + 1); }}
-            />
+            <div className="min-h-0 flex-1">
+              <PythonPhone
+                title={mission.title}
+                session={session}
+                overlay={overlay}
+                onClearOverlay={() => setOverlay(null)}
+                onReply={(value) => { session.provideInput(value); bump((n) => n + 1); }}
+              />
+            </div>
           </section>
         </div>
       </div>

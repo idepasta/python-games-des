@@ -16,7 +16,7 @@ export type PythonStep = {
   success: string;
   starterCode: string;
   rules: ValidationRule[];
-  game?: { kind: "miner" | "platformer"; level: number };
+  game?: { kind: "miner" | "platformer" | "flappy" | "city" | "dino"; level: number };
 };
 
 export type PythonMission = {
@@ -636,6 +636,308 @@ run(3)
         rules: [
           includes("wait(", "Call wait(seconds) so the next jump happens after you land."),
           game("Wait until you land, then jump the next gap."),
+        ],
+      },
+    ],
+  },
+  {
+    id: "flappy-bird",
+    emoji: "🐦",
+    title: "Flappy Bird",
+    teaser: "Flap, glide, and pipes",
+    story: "A tiny bird flies to the right. flap() hops up, coast() dips down, and glide() stays level. Green cells are pipes. Reach the yellow goal.",
+    steps: [
+      {
+        id: "one",
+        title: "Hop over one pipe",
+        prompt: "The pipe is on your row. flap() once, glide() through the gap, then coast() down onto the goal.",
+        hint: "flap(), glide(), coast().",
+        success: "The bird cleared the pipe.",
+        starterCode: `# Hop, then settle onto the goal.
+flap()
+`,
+        game: { kind: "flappy", level: 1 },
+        rules: [
+          includes("flap()", "Call flap() to hop over the pipe."),
+          includes("coast()", "Call coast() to dip onto the goal."),
+          game("The bird has not reached the goal yet."),
+        ],
+      },
+      {
+        id: "two",
+        title: "Cross a wider gap",
+        prompt: "Flap over the pipe, glide across, coast down, then glide to the goal.",
+        hint: "flap(), glide(), glide(), coast(), glide().",
+        success: "The bird crossed the wider gap.",
+        starterCode: `flap()
+glide()
+`,
+        game: { kind: "flappy", level: 2 },
+        rules: [
+          includes("coast()", "Dip with coast() before the last glide."),
+          game("Glide to the goal after you clear the pipe."),
+        ],
+      },
+      {
+        id: "loop",
+        title: "Repeat the flap",
+        prompt: "Two pipes use the same pattern. Loop over the list [1, 2]. Each time, flap(), glide(), then coast().",
+        hint: "for n in [1, 2]: then flap(), glide(), and coast().",
+        success: "The loop cleared both pipes.",
+        starterCode: `for n in [1, 2]:
+    flap()
+`,
+        game: { kind: "flappy", level: 3 },
+        rules: [
+          includes("for ", "Use a for loop so you do not write every flap by hand."),
+          includes("glide()", "glide() flies straight through a gap."),
+          includes("coast()", "coast() dips after each gap."),
+          game("Clear both pipes and land on the goal."),
+        ],
+      },
+      {
+        id: "sense",
+        title: "Fly by looking ahead",
+        prompt: "Pipes are not in a straight line. While ahead() is not \"goal\", compare row() with gap_ahead(). flap() if you are too low, coast() if you are too high, otherwise glide(). After the loop, glide() onto the goal if you are not there yet.",
+        hint: "if row() > gap_ahead(): flap(). elif row() < gap_ahead(): coast(). else: glide().",
+        success: "The bird threaded every pipe.",
+        starterCode: `while ahead() != "goal":
+    glide()
+`,
+        game: { kind: "flappy", level: 4 },
+        rules: [
+          includes("while ", "Keep flying with a while loop."),
+          includes("gap_ahead()", "Look at the next gap with gap_ahead()."),
+          includes("row()", "Compare gap_ahead() with row()."),
+          includes("flap()", "flap() when the bird is below the gap."),
+          game("Match the gap, then reach the goal."),
+        ],
+      },
+    ],
+  },
+  {
+    id: "city-drive",
+    emoji: "🚗",
+    title: "City Drive",
+    teaser: "A plain city and a crate blaster",
+    story: "A plain top-down city. Gray is road, dark squares are buildings, and orange crates block the street. move_up(), move_down(), move_left(), move_right(), and block_ahead() drive the car. shoot() pops the crate directly in front of you. Reach the yellow goal.",
+    steps: [
+      {
+        id: "drive",
+        title: "Drive to the goal",
+        prompt: "The goal is two roads to the right. Call move_right() until the car is on it.",
+        hint: "move_right() on two lines.",
+        success: "The car reached the goal.",
+        starterCode: `# Drive along the road.
+move_right()
+`,
+        game: { kind: "city", level: 1 },
+        rules: [
+          includes("move_right()", "Call move_right() to drive."),
+          game("The car has not reached the goal yet."),
+        ],
+      },
+      {
+        id: "crate",
+        title: "Pop a crate",
+        prompt: "An orange crate blocks the road. Drive up to it, call shoot(), then drive onto the goal.",
+        hint: "move_right(), shoot(), then move_right() twice.",
+        success: "The crate popped and the car reached the goal.",
+        starterCode: `move_right()
+`,
+        game: { kind: "city", level: 2 },
+        rules: [
+          includes("shoot()", "Call shoot() while the crate is in front of the car."),
+          game("Pop the crate, then stand on the goal."),
+        ],
+      },
+      {
+        id: "loop",
+        title: "Clear a line of crates",
+        prompt: "Three crates sit in a row. Use a while loop and block_ahead(). shoot() a crate, otherwise move_right(). When the goal is ahead, move onto it.",
+        hint: 'Loop while block_ahead() != "goal". If the block is "crate", shoot(). Then move_right() one last time.',
+        success: "The street is clear.",
+        starterCode: `while block_ahead() != "goal":
+    move_right()
+`,
+        game: { kind: "city", level: 3 },
+        rules: [
+          includes("while ", "Use a while loop for the whole row."),
+          includes("shoot()", "Pop each crate with shoot()."),
+          includes("block_ahead()", "Look with block_ahead() before you drive or shoot."),
+          game("Pop every crate, then stand on the goal."),
+        ],
+      },
+      {
+        id: "corner",
+        title: "Turn the corner",
+        prompt: "Drive right to the crate, shoot() it, then drive down to the goal.",
+        hint: "Two move_right() calls, shoot(), move_right(), then move_down() twice.",
+        success: "You crossed the city block.",
+        starterCode: `move_right()
+# The crate is further right.
+`,
+        game: { kind: "city", level: 4 },
+        rules: [
+          includes("shoot()", "Pop the crate before you pass it."),
+          includes("move_down()", "Turn down toward the goal."),
+          game("Pop the crate, then stand on the goal."),
+        ],
+      },
+    ],
+  },
+  {
+    id: "dino-run",
+    emoji: "🦖",
+    title: "Dino Run",
+    teaser: "A 3D desert run",
+    story: "A chunky dinosaur runs across a 3D desert. Cacti sit on the ground and birds fly low. jump() hops a cactus, duck() slips under a bird, and run() jogs ahead. Reach the yellow finish.",
+    steps: [
+      {
+        id: "cactus",
+        title: "Jump one cactus",
+        prompt: "A cactus blocks the trail. jump() over it, then run() to the yellow finish.",
+        hint: "jump() on one line, then run().",
+        success: "The dinosaur cleared the cactus.",
+        starterCode: `# Hop the cactus, then finish.
+run()
+`,
+        game: { kind: "dino", level: 1 },
+        rules: [
+          includes("jump()", "Call jump() to hop the cactus."),
+          includes("run()", "Call run() to reach the finish."),
+          game("Jump the cactus, then stand on the finish."),
+        ],
+      },
+      {
+        id: "bird",
+        title: "Duck under a bird",
+        prompt: "A bird flies low in front of you. duck() under it, then run() to the finish.",
+        hint: "duck(), then run().",
+        success: "The dinosaur slipped under the bird.",
+        starterCode: `run()
+`,
+        game: { kind: "dino", level: 2 },
+        rules: [
+          includes("duck()", "Call duck() to go under the bird."),
+          includes("run()", "Call run() after the duck."),
+          game("Duck the bird, then stand on the finish."),
+        ],
+      },
+      {
+        id: "loop",
+        title: "Repeat the pattern",
+        prompt: "The trail is cactus, bird, then a clear step, twice. Loop over [1, 2]. Each time, jump(), duck(), then run().",
+        hint: "for n in [1, 2]: then jump(), duck(), and run().",
+        success: "The loop cleared both pairs.",
+        starterCode: `for n in [1, 2]:
+    jump()
+`,
+        game: { kind: "dino", level: 3 },
+        rules: [
+          includes("for ", "Use a for loop for the repeated pattern."),
+          includes("jump()", "jump() clears each cactus."),
+          includes("duck()", "duck() slips under each bird."),
+          includes("run()", "run() covers the clear step."),
+          game("Clear both pairs and reach the finish."),
+        ],
+      },
+      {
+        id: "sense",
+        title: "Watch the trail",
+        prompt: "The obstacles are mixed. While ahead() is not \"goal\", jump() a cactus, duck() a bird, and run() when the next step is clear. After the loop, run() onto the finish.",
+        hint: 'if ahead() == "cactus": jump(). elif ahead() == "bird": duck(). else: run().',
+        success: "The dinosaur read the trail and finished.",
+        starterCode: `while ahead() != "goal":
+    run()
+`,
+        game: { kind: "dino", level: 4 },
+        rules: [
+          includes("while ", "Keep going with a while loop."),
+          includes("ahead()", "Look with ahead() before each move."),
+          includes("jump()", "jump() when ahead() is a cactus."),
+          includes("duck()", "duck() when ahead() is a bird."),
+          game("React to each obstacle, then stand on the finish."),
+        ],
+      },
+    ],
+  },
+  {
+    id: "trap-quiz",
+    emoji: "🎤",
+    title: "Trap Quiz",
+    teaser: "A quiz about Greek trap",
+    story: "Build a phone quiz about four Greek trap artists: Trannos, Light, Snick, and Rack. The phone asks for a name and checks it against the lineup.",
+    steps: [
+      {
+        id: "lineup",
+        title: "Store the lineup",
+        prompt: "Make a list called artists with these four names, in quotes: Trannos, Light, Snick, Rack.",
+        hint: 'artists = ["Trannos", "Light", "Snick", "Rack"]',
+        success: "The lineup is stored.",
+        starterCode: `# Greek trap quiz
+artists = 
+`,
+        rules: [
+          includes("artists", "Name the list artists."),
+          includes("Trannos", "Put Trannos in the list."),
+          includes("Light", "Put Light in the list."),
+          includes("Snick", "Put Snick in the list."),
+          includes("Rack", "Put Rack in the list."),
+        ],
+      },
+      {
+        id: "ask",
+        title: "Ask for a name",
+        prompt: "Print Greek trap quiz, then use input() to ask for a trapper and save the answer in guess.",
+        hint: 'print("Greek trap quiz") and guess = input("Name one trapper: ")',
+        success: "The phone can ask the first question.",
+        starterCode: `artists = ["Trannos", "Light", "Snick", "Rack"]
+# Ask the player to name a trapper.
+`,
+        rules: [
+          includes("print(", "Print the quiz title."),
+          includes("input(", "Ask with input()."),
+          includes("guess", "Save the answer in guess."),
+        ],
+      },
+      {
+        id: "check",
+        title: "Check the answer",
+        prompt: "Ask for a name until guess is in artists. If it is, print Correct! If it is not, print Try another name. and ask again.",
+        hint: 'guess = "" then while not guess in artists: ask with input(), and use if guess in artists.',
+        success: "A wrong name asks again. A lineup name is Correct!",
+        starterCode: `artists = ["Trannos", "Light", "Snick", "Rack"]
+guess = input("Name one trapper: ")
+`,
+        rules: [
+          includes("while ", "Use a while loop so a wrong name can try again."),
+          includes("in artists", "Look for the guess inside artists."),
+          includes("if ", "Use if to tell a lineup name from a wrong one."),
+          includes("Correct!", "Print Correct! for a lineup name."),
+          includes("Try another name.", "Print Try another name. when the guess is not in artists."),
+          run(["Mozart", "Trannos"], ["Try another name.", "Correct!"], "A wrong name should ask again, then accept Trannos."),
+        ],
+      },
+      {
+        id: "score",
+        title: "Score the lineup",
+        prompt: "Start score at 0. For each artist, keep asking until guess matches that name. A wrong guess prints Nope! and asks again. A match prints Correct!, adds 1 to score, then moves on. After every name, print the score.",
+        hint: 'while not guess == name: ask again. score = score + 1 when guess == name.',
+        success: "The quiz keeps score.",
+        starterCode: `artists = ["Trannos", "Light", "Snick", "Rack"]
+score = 0
+for name in artists:
+    guess = input("Name a Greek trapper: ")
+print(score)
+`,
+        rules: [
+          includes("for ", "Use a for loop over the lineup."),
+          includes("while ", "Keep asking while the guess does not match the current name."),
+          includes("if ", "Check each answer with if."),
+          includes("score + 1", "Add 1 to score for a match."),
+          includes("Nope!", "Print Nope! when the name is wrong."),
+          run(["Nope", "Trannos", "Light", "Snick", "Rack"], ["Nope!", "Correct!", "4"], "A wrong name should ask again, then four matches score 4."),
         ],
       },
     ],

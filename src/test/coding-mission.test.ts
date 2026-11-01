@@ -6,6 +6,7 @@ import {
   parseProgram,
   starterCode,
   ticTacToeMission,
+  ticTacToeSolution,
 } from "@/lib/coding-mission";
 
 describe("coding mission parser", () => {
@@ -50,6 +51,12 @@ describe("tic-tac-toe steps", () => {
     expect(checkStep(ticTacToeMission, 3, `${base}turns_on = True`).ok).toBe(true);
     expect(checkStep(ticTacToeMission, 4, `${base}check_winner = True`).ok).toBe(true);
     expect(checkStep(ticTacToeMission, 5, `${base}reset_button = True`).ok).toBe(true);
+  });
+
+  it("gives a working solution for every step", () => {
+    ticTacToeMission.steps.forEach((_, index) => {
+      expect(checkStep(ticTacToeMission, index, ticTacToeSolution(index)).ok).toBe(true);
+    });
   });
 
   it("appends the next starter block when advancing", () => {

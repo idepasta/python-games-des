@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useRouteContext } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { missions, checkStep, blankCount } from "@/lib/missions";
+import { showHintButton } from "@/lib/hint-gate";
+import { missionLocked } from "@/lib/mission-lock";
 import { awardScore, logError } from "@/lib/auth/scoring";
 import { readProgress, writeProgress } from "@/lib/auth/store";
 import { useStepTelemetry } from "@/hooks/use-step-telemetry";
@@ -42,9 +44,11 @@ function Hacker() {
         <section className="max-w-4xl mx-auto px-4 py-10">
           <h1 className="font-display text-4xl md:text-6xl font-bold text-go">&gt; HACKER_MISSIONS_</h1>
           <p className="mt-4 text-lg">Ένας μυστηριώδης hacker κλείδωσε το εργαστήριο υπολογιστών. Μόνο εσύ μπορείς να τον σταματήσεις, γράφοντας Python! Σε κάθε αποστολή θα πάρεις <b>εργαλεία</b> (κομμάτια εντολών) σκόρπια. Εσύ αποφασίζεις πού πάει το καθένα.</p>
+          {session?.role === "admin" && <p className="mt-3 text-go">Tutor preview: every mission is open.</p>}
           <div className="mt-8 grid sm:grid-cols-2 gap-4">
             {missions.map((m, i) => {
-              const locked = i > 0 && !done.includes(missions[i - 1]!.id);
+              const previous = i > 0 ? missions[i - 1] : undefined;
+              const locked = missionLocked(session?.role, i, previous ? done.includes(previous.id) : false);
               return (
                 <button key={m.id} disabled={locked} onClick={() => setActive(i)} className="text-left rounded-xl border-2 border-go/50 p-4 hover:bg-go/10 disabled:opacity-40 disabled:cursor-not-allowed">
                   <div className="text-3xl">{locked ? "🔒" : m.emoji} {done.includes(m.id) && "✅"}</div>
@@ -72,6 +76,7 @@ function MissionView({ n, onExit, onDone }: { n: number; onExit: () => void; onD
   const [focus, setFocus] = useState(0);
   const [res, setRes] = useState<boolean[] | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [misses, setMisses] = useState(0);
   const built = s >= m.steps.length - 1 && res?.every(Boolean);
   useStepTelemetry(session?.username, session?.role, {
     area: "hacker",
@@ -84,6 +89,7 @@ function MissionView({ n, onExit, onDone }: { n: number; onExit: () => void; onD
   const check = () => {
     const outcome = checkStep(step, vals);
     setRes(outcome);
+    if (outcome.some((ok) => !ok)) setMisses((count) => count + 1);
     if (session?.role === "student" && outcome.some((ok) => !ok)) {
       logError(session.username, {
         area: "hacker",
@@ -117,6 +123,7 @@ function MissionView({ n, onExit, onDone }: { n: number; onExit: () => void; onD
     setRes(null);
     setFocus(0);
     setShowHint(false);
+    setMisses(0);
   };
   const win = () => {
     awardStep();
@@ -160,7 +167,9 @@ function MissionView({ n, onExit, onDone }: { n: number; onExit: () => void; onD
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={check} className="rounded-lg bg-go text-code px-4 py-2 font-bold">▶ Έλεγχος</button>
-          <button onClick={() => setShowHint(true)} className="rounded-lg border border-warn text-warn px-4 py-2">💡 Βοήθεια</button>
+          {showHintButton(misses) && (
+            <button onClick={() => setShowHint(true)} className="rounded-lg border border-warn text-warn px-4 py-2">💡 Βοήθεια</button>
+          )}
         </div>
         {showHint && <div className="text-warn">💡 {step.hint}</div>}
         {res && (res.every(Boolean)

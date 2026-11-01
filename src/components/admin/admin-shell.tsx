@@ -30,6 +30,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
+        <p className="mt-6 font-display text-xs uppercase tracking-wide text-muted-foreground">Preview games</p>
+        <nav className="mt-3 flex gap-2 md:flex-col">
+          <Link to="/" className="rounded-xl px-3 py-2 font-display font-bold hover:bg-secondary">Machines</Link>
+          <Link to="/studio" className="rounded-xl px-3 py-2 font-display font-bold hover:bg-secondary">Phone games</Link>
+          <Link to="/hacker" className="rounded-xl px-3 py-2 font-display font-bold hover:bg-secondary">Hacker</Link>
+        </nav>
       </aside>
       <div className="min-w-0 p-4 md:p-8">
         <AdminToolbar />

@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
+import { showHintButton, showSolution } from "@/lib/hint-gate";
+import { pythonStepSolution } from "@/lib/python-solutions";
 import { pythonMissions, validatePythonStep } from "@/lib/python-missions";
 import { runPython } from "@/lib/python-vm";
+
+describe("hint button", () => {
+  it("stays hidden until the third miss on this step", () => {
+    expect(showHintButton(0)).toBe(false);
+    expect(showHintButton(2)).toBe(false);
+    expect(showHintButton(3)).toBe(true);
+    expect(showSolution(4)).toBe(false);
+    expect(showSolution(5)).toBe(true);
+  });
+});
 
 const madLibs = `name = "Sam"
 noun = input("Give me a noun: ")
@@ -110,7 +122,7 @@ describe("python mini interpreter", () => {
 });
 
 describe("python mission curriculum", () => {
-  it("has five text games plus the miner and platformer", () => {
+  it("has five text games plus the canvas games", () => {
     expect(pythonMissions.map((m) => m.id)).toEqual([
       "mad-libs",
       "magic-8-ball",
@@ -119,6 +131,10 @@ describe("python mission curriculum", () => {
       "hangman",
       "python-miner",
       "logic-platformer",
+      "flappy-bird",
+      "city-drive",
+      "dino-run",
+      "trap-quiz",
     ]);
   });
 
@@ -127,6 +143,16 @@ describe("python mission curriculum", () => {
       for (const step of mission.steps) {
         expect(validatePythonStep(step, step.starterCode).ok, `${mission.id}/${step.id}`).toBe(false);
       }
+    }
+  });
+
+  it("accepts the taught solution for every step", () => {
+    for (const mission of pythonMissions) {
+      mission.steps.forEach((step) => {
+        const code = pythonStepSolution(mission.id, step.id);
+        const check = validatePythonStep(step, code);
+        expect(check.ok, `${mission.id}/${step.id}: ${check.message}`).toBe(true);
+      });
     }
   });
 
@@ -147,7 +173,7 @@ wait(0.7)
 run(3)
 `;
     const solutions = [madLibs, eightBall, rps, guess, hangman, minerBuild, platformTiming];
-    pythonMissions.forEach((mission, i) => {
+    pythonMissions.slice(0, solutions.length).forEach((mission, i) => {
       const last = mission.steps[mission.steps.length - 1]!;
       const check = validatePythonStep(last, solutions[i]!);
       expect(check.ok, `${mission.id}: ${check.message}`).toBe(true);

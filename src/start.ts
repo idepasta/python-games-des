@@ -1,7 +1,24 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
+import { bindRequestCookieStore } from "@/lib/auth/request-cookie";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+
+type CookieStore = {
+  run: <T>(value: string | null, fn: () => T) => T;
+};
+
+let requestCookies: CookieStore | null = null;
+
+const sessionCookieMiddleware = createMiddleware().server(async ({ next, request }) => {
+  if (!requestCookies) {
+    const { AsyncLocalStorage } = await import("node:async_hooks");
+    const store = new AsyncLocalStorage<string | null>();
+    bindRequestCookieStore(store);
+    requestCookies = store;
+  }
+  return requestCookies.run(request.headers.get("cookie"), () => next());
+});
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -27,5 +44,5 @@ const csrfMiddleware = createCsrfMiddleware({
 
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware, csrfMiddleware],
+  requestMiddleware: [errorMiddleware, sessionCookieMiddleware, csrfMiddleware],
 }));

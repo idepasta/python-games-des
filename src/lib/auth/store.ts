@@ -1,4 +1,5 @@
 import { hashSecret, secretsMatch, signPayload, verifySignedPayload } from "@/lib/auth/crypto";
+import { requestCookieHeader } from "@/lib/auth/request-cookie";
 import { generateReviveCode, normalizeReviveCode } from "@/lib/auth/revive-code";
 import {
   AUTH_COOKIE,
@@ -153,7 +154,7 @@ export function writeProgress(username: string, progress: UserProgress) {
 
 function cookieHeader(): string | null {
   if (typeof document !== "undefined") return document.cookie;
-  return null;
+  return requestCookieHeader();
 }
 
 export function readCookie(name: string, header = cookieHeader()): string | null {
