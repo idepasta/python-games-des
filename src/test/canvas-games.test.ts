@@ -9,31 +9,45 @@ beforeEach(() => {
   localStorage.clear();
 });
 
-const miner = pythonMissions.find((mission) => mission.id === "python-miner")!;
+const othello = pythonMissions.find((mission) => mission.id === "othello")!;
 const platformer = pythonMissions.find((mission) => mission.id === "logic-platformer")!;
 
 describe("canvas game bridge", () => {
-  it("mines a path and reports a crash when the miner hits dirt", () => {
-    const cleared = runPython("move_right()\nmove_right()\n", [], hooksForGame("miner", 1));
+  it("slides a checker and crashes a jump that has no black piece", () => {
+    const cleared = runPython("move_right()\nmove_right()\n", [], hooksForGame("checkers", 1));
     expect(cleared.game?.status).toBe("win");
-    const bumped = runPython("move_right()\nmove_right()\n", [], hooksForGame("miner", 2));
-    expect(bumped.status).toBe("error");
-    expect(bumped.error).toContain("dirt");
-    expect(bumped.game?.status).toBe("crash");
+    const missed = runPython("move_right()\n", [], hooksForGame("checkers", 2));
+    expect(missed.status).toBe("error");
+    expect(missed.error).toContain("black");
+    expect(missed.game?.status).toBe("crash");
   });
 
-  it("lets a loop read the block in front of the miner", () => {
-    const code = `while block_ahead() != "goal":
-    if block_ahead() == "air":
-        move_right()
-    else:
-        mine_block()
+  it("flips every othello disc from a corner square", () => {
+    const code = `move_right()
 move_right()
+move_right()
+play()
 `;
-    const result = runPython(code, [], hooksForGame("miner", 4));
+    const result = runPython(code, [], hooksForGame("othello", 2));
     expect(result.game?.status).toBe("win");
     const last = result.game?.frames[result.game.frames.length - 1];
-    expect(last?.diamond).toBe(1);
+    expect(last?.rows.flat().includes("B")).toBe(false);
+  });
+
+  it("knocks bowling pins and reports a gutter", () => {
+    const strike = runPython("roll()\nroll()\n", [], hooksForGame("bowling", 1));
+    expect(strike.game?.status).toBe("win");
+    const gutter = runPython("roll()\nroll()\nroll()\n", [], hooksForGame("bowling", 2));
+    expect(gutter.status).toBe("error");
+    expect(gutter.error).toContain("gutter");
+  });
+
+  it("lets flap() and coast() clear an easy pipe", () => {
+    const flight = runPython("flap()\ncoast()\ncoast()\n", [], hooksForGame("flappy", 1));
+    expect(flight.game?.status).toBe("win");
+    const hit = runPython("coast()\ncoast()\n", [], hooksForGame("flappy", 1));
+    expect(hit.game?.status).toBe("crash");
+    expect(hit.error).toContain("pipe");
   });
 
   it("plays a platformer script until the flag or a fall", () => {
@@ -45,29 +59,19 @@ move_right()
   });
 
   it("accepts the taught solutions for every canvas step", () => {
-    const minerCode = [
-      "move_right()\nmove_right()\n",
-      "move_right()\nmine_block()\nmove_right()\nmove_right()\n",
-      `while block_ahead() != "goal":
-    if block_ahead() == "dirt":
-        mine_block()
-    else:
-        move_right()
-move_right()
+    const othelloCode = [
+      "play()\n",
+      "move_right()\nmove_right()\nmove_right()\nplay()\n",
+      `while can_play() != "yes":
+    move_right()
+play()
 `,
-      `while block_ahead() != "goal":
-    if block_ahead() == "air":
-        move_right()
-    else:
-        mine_block()
-move_right()
-`,
-      `move_right()
-mine_block()
-move_right()
-place_block("plank")
+      `if can_play() == "yes":
+    play()
 move_down()
-move_right()
+move_down()
+if can_play() == "yes":
+    play()
 `,
     ];
     const platformCode = [
@@ -76,8 +80,8 @@ move_right()
       "run(2)\njump()\nrun(1)\njump()\nrun(3)\n",
       "run(2)\njump()\nwait(0.7)\nrun(1)\njump()\nwait(0.7)\nrun(3)\n",
     ];
-    miner.steps.forEach((step, index) => {
-      expect(validatePythonStep(step, minerCode[index]!).ok, step.id).toBe(true);
+    othello.steps.forEach((step, index) => {
+      expect(validatePythonStep(step, othelloCode[index]!).ok, step.id).toBe(true);
     });
     platformer.steps.forEach((step, index) => {
       const check = validatePythonStep(step, platformCode[index]!);
@@ -91,11 +95,11 @@ move_right()
     if (!created.ok) throw new Error("setup failed");
     logLevelCleared("Mina-Ore", {
       area: "python",
-      missionId: "python-miner",
-      missionTitle: "Python Miner",
-      stepId: "walk",
-      stepTitle: "Walk to the goal",
-    }, "You cleared the mine!", "move_right()\n");
+      missionId: "othello",
+      missionTitle: "Othello",
+      stepId: "drop",
+      stepTitle: "Drop one disc",
+    }, "Every black disc flipped to white.", "play()\n");
     const saved = findUser("mina-ore")!;
     expect(saved.history.some((event) => event.kind === "level_cleared")).toBe(true);
     expect(saved.score).toBe(0);

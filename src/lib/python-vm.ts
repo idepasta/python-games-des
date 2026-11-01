@@ -17,7 +17,7 @@ export class GameCrash extends Error {
 }
 
 export type GameView = {
-  kind: "miner" | "platformer" | "flappy" | "city" | "dino";
+  kind: "checkers" | "othello" | "platformer" | "flappy" | "bowling" | "dino";
   status: "playing" | "win" | "crash";
   message: string;
   frames: MinerFrame[];
@@ -94,7 +94,7 @@ type Stmt =
   | { type: "pass" };
 
 const KEYWORDS = new Set(["if", "elif", "else", "while", "for", "in", "import", "True", "False", "None", "and", "or", "not", "break", "pass"]);
-const GAME_FNS = new Set(["move_up", "move_down", "move_left", "move_right", "mine_block", "place_block", "block_ahead", "run", "jump", "wait", "flap", "coast", "glide", "row", "gap_ahead", "ahead", "shoot", "duck"]);
+const GAME_FNS = new Set(["move_up", "move_down", "move_left", "move_right", "jump_left", "jump_right", "look_left", "look_right", "play", "can_play", "square", "aim_left", "aim_right", "roll", "pins_ahead", "run", "jump", "wait", "flap", "coast", "glide", "row", "gap_ahead", "ahead", "duck"]);
 const CMP = new Set(["==", "!=", "<", ">", "<=", ">=", "in"]);
 const BANNED = new Set(["eval", "exec", "open", "compile", "__import__", "globals", "locals", "exit", "quit"]);
 

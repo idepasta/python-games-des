@@ -16,7 +16,7 @@ export type PythonStep = {
   success: string;
   starterCode: string;
   rules: ValidationRule[];
-  game?: { kind: "miner" | "platformer" | "flappy" | "city" | "dino"; level: number };
+  game?: { kind: "checkers" | "othello" | "platformer" | "flappy" | "bowling" | "dino"; level: number };
 };
 
 export type PythonMission = {
@@ -118,70 +118,81 @@ print()
     ],
   },
   {
-    id: "magic-8-ball",
-    emoji: "🎱",
-    title: "Magic 8-Ball",
-    teaser: "Lists and random.choice()",
-    story: "The phone becomes a Magic 8-Ball. It picks a random answer from a list.",
+    id: "checkers",
+    emoji: "🟥",
+    title: "Checkers",
+    teaser: "Diagonal slides and jumps",
+    story: `Checkers is played on the dark squares.
+You move the red piece diagonally forward, toward the top of the board.
+move_left() and move_right() slide one dark square.
+jump_left() and jump_right() hop over a black piece and capture it.
+A jump only works when the next diagonal square holds a black piece and the landing square is open.
+Light squares and the edge of the board are not legal landings.
+Reach the yellow square to finish the level. The black pieces do not move.`,
     steps: [
       {
-        id: "import",
-        title: "Import random",
-        prompt: "Add import random at the top so you can pick a surprise answer.",
-        hint: "The first line should be: import random",
-        success: "Random is ready to use.",
-        starterCode: `# Magic 8-Ball step 1
-# Unlock surprise answers.
+        id: "slide",
+        title: "Slide to the yellow square",
+        prompt: "The yellow square is two diagonal steps forward-right. Call move_right() until the red piece lands on it.",
+        hint: "Write move_right() on two lines.",
+        success: "The red piece reached the yellow square.",
+        starterCode: `# Slide diagonally toward the yellow square.
+move_right()
 `,
-        rules: [includes("import random", "Write import random on its own line.")],
-      },
-      {
-        id: "list",
-        title: "Make an answer list",
-        prompt: "Create a list called answers with at least three quoted words, such as \"Yes\", \"No\", and \"Ask again\".",
-        hint: 'Write answers = ["Yes", "No", "Ask again"]',
-        success: "The 8-Ball has answers to choose from.",
-        starterCode: `import random
-# A list holds many answers inside [ ].
-answers = []
-`,
+        game: { kind: "checkers", level: 1 },
         rules: [
-          includes("answers", "Name the list answers."),
-          includes("[", "Use square brackets to make a list."),
-          includesAny(["Yes", "yes", "No", "Ask"], "Put real answer words inside the list."),
+          includes("move_right()", "Call move_right() to slide diagonally forward."),
+          game("The red piece has not reached the yellow square yet."),
         ],
       },
       {
-        id: "ask",
-        title: "Ask a question",
-        prompt: "Use input() to ask the player a yes-or-no question and store it in question.",
-        hint: 'Write question = input("Ask the Magic 8-Ball: ")',
-        success: "The player can ask the 8-Ball.",
-        starterCode: `import random
-answers = ["Yes", "No", "Ask again", "Definitely"]
-question = 
+        id: "jump",
+        title: "Jump a black piece",
+        prompt: "A black piece sits on the next diagonal square. jump_right() hops over it and lands on the yellow square.",
+        hint: "Write jump_right() on its own line.",
+        success: "You captured the black piece.",
+        starterCode: `# Hop over the black piece.
+move_right()
 `,
+        game: { kind: "checkers", level: 2 },
         rules: [
-          includes("input(", "Call input() to read the player's question."),
-          includes("question", "Store the question in a variable named question."),
+          includes("jump_right()", "Call jump_right() to hop over the black piece."),
+          game("Jump the black piece and land on the yellow square."),
         ],
       },
       {
-        id: "choice",
-        title: "Pick a random answer",
-        prompt: "Print a random item from the list with random.choice(answers).",
-        hint: "Write print(random.choice(answers))",
-        success: "Shake the 8-Ball on the phone!",
-        starterCode: `import random
-answers = ["Yes", "No", "Ask again", "Definitely"]
-question = input("Ask the Magic 8-Ball: ")
-# Pick one answer at random.
-print()
+        id: "loop",
+        title: "Keep sliding",
+        prompt: "The yellow square is straight up the forward-right diagonal. Loop while look_right() is not \"goal\", and move_right() each time. After the loop, move_right() onto the yellow square.",
+        hint: 'while look_right() != "goal": then move_right(). One more move_right() after the loop.',
+        success: "The loop carried the piece to the yellow square.",
+        starterCode: `# Stop when the yellow square is the next diagonal step.
+while look_right() != "goal":
+    move_left()
 `,
+        game: { kind: "checkers", level: 3 },
         rules: [
-          includes("random.choice", "Use random.choice to pick one item from the list."),
-          includes("print(", "Print the chosen answer."),
-          run(["Will I learn Python?"], ["Yes"], "The phone should print a chosen answer.", { choice: (items) => items[0]! }),
+          includes("while ", "Use a while loop so you do not write every slide by hand."),
+          includes("look_right()", "Look with look_right() before each slide."),
+          includes("move_right()", "Slide with move_right()."),
+          game("Slide until the red piece stands on the yellow square."),
+        ],
+      },
+      {
+        id: "capture",
+        title: "Slide or capture",
+        prompt: "Some steps are empty and one step has a black piece. While look_right() is not \"goal\", jump_right() when it is \"black\" and move_right() otherwise. After the loop, move_right() onto the yellow square.",
+        hint: 'if look_right() == "black": jump_right(). else: move_right(). Then one more move_right().',
+        success: "You captured the piece and reached the yellow square.",
+        starterCode: `while look_right() != "goal":
+    move_right()
+`,
+        game: { kind: "checkers", level: 4 },
+        rules: [
+          includes("if ", "Use if so a black piece is captured and an empty square is a slide."),
+          includes("jump_right()", "jump_right() captures the black piece."),
+          includes("look_right()", "Decide with look_right()."),
+          game("Capture the black piece, then stand on the yellow square."),
         ],
       },
     ],
@@ -479,89 +490,81 @@ while lives > 0:
     ],
   },
   {
-    id: "python-miner",
-    emoji: "⛏️",
-    title: "Python Miner",
-    teaser: "Loops and conditionals on a 2D grid",
-    story: "A top-down mine. Brown is dirt, gray is stone, teal is diamond, and yellow marks are where you build. move_up(), move_down(), move_left(), move_right(), mine_block(), place_block(\"plank\"), and block_ahead() control the miner.",
+    id: "othello",
+    emoji: "⚫",
+    title: "Othello",
+    teaser: "Flip discs between your own",
+    story: `Othello uses black and white discs.
+You play white. The cursor shows where you will drop a disc.
+move_up(), move_down(), move_left(), and move_right() move the cursor.
+play() drops a white disc on the cursor square.
+The new disc must trap at least one black disc in a straight line against another white disc.
+Trapped black discs flip to white.
+can_play() is "yes" on a legal square. square() reads the cursor. Clear every black disc to win.`,
     steps: [
       {
-        id: "walk",
-        title: "Walk to the goal",
-        prompt: "The goal is two steps to the right. Call move_right() until the miner stands on it.",
-        hint: "Write move_right() on two lines.",
-        success: "The miner reached the goal.",
-        starterCode: `# Walk toward the yellow goal.
+        id: "drop",
+        title: "Drop one disc",
+        prompt: "The cursor is already on a legal square. Call play() to flip the black disc between your white discs.",
+        hint: "Write play() on its own line.",
+        success: "The black disc flipped to white.",
+        starterCode: `# The cursor is on a legal square.
 move_right()
 `,
-        game: { kind: "miner", level: 1 },
+        game: { kind: "othello", level: 1 },
         rules: [
-          includes("move_right()", "Call move_right() to walk."),
-          game("The miner has not reached the goal yet."),
+          includes("play()", "Call play() to drop a white disc."),
+          game("Flip the black disc."),
         ],
       },
       {
-        id: "mine",
-        title: "Mine the dirt",
-        prompt: "Dirt is in the way. Face it, call mine_block(), then walk onto the goal.",
-        hint: "move_right(), mine_block(), then move_right() twice.",
-        success: "You mined the dirt and reached the goal.",
-        starterCode: `# Dirt blocks the path. Mine it, then walk.
-move_right()
+        id: "walk",
+        title: "Walk to the corner",
+        prompt: "The legal square is three steps to the right. move_right() until the cursor is there, then play().",
+        hint: "Three move_right() calls, then play().",
+        success: "Both black discs flipped.",
+        starterCode: `move_right()
 `,
-        game: { kind: "miner", level: 2 },
+        game: { kind: "othello", level: 2 },
         rules: [
-          includes("mine_block()", "Call mine_block() when dirt is in front of you."),
-          game("Mine the dirt, then stand on the goal."),
+          includes("play()", "Call play() when the cursor is on the legal square."),
+          includes("move_right()", "Walk right with move_right()."),
+          game("Reach the corner and flip both black discs."),
         ],
       },
       {
         id: "loop",
-        title: "Clear a dirt wall",
-        prompt: "Three dirt blocks are in a row. Use a while loop and block_ahead() so you mine dirt and walk forward until the goal is in front of you.",
-        hint: 'Loop until block_ahead() == "goal", then call move_right() one more time.',
-        success: "The loop cleared the wall.",
-        starterCode: `# Keep going until the goal is ahead.
-while block_ahead() != "goal":
+        title: "Search for a legal square",
+        prompt: "Keep moving right while can_play() is not \"yes\". When the cursor finds a legal square, play().",
+        hint: 'while can_play() != "yes": move_right(). Then play().',
+        success: "The loop found the corner and flipped both discs.",
+        starterCode: `while can_play() != "yes":
     move_right()
 `,
-        game: { kind: "miner", level: 3 },
+        game: { kind: "othello", level: 3 },
         rules: [
-          includes("while ", "Use a while loop so you do not mine by hand three times."),
-          includes("block_ahead()", "Look with block_ahead() before you move or mine."),
-          game("Mine every dirt block, then step onto the goal."),
+          includes("while ", "Use a while loop to search the row."),
+          includes("can_play()", "Ask can_play() before you drop a disc."),
+          includes("play()", "play() when can_play() is \"yes\"."),
+          game("Find the legal square, then flip every black disc."),
         ],
       },
       {
-        id: "diamond",
-        title: "Collect the diamond",
-        prompt: "Mine dirt, stone, and the diamond. Use if and else so air means move_right() and anything else means mine_block().",
-        hint: 'If the block ahead is air, move_right(). Otherwise mine_block(). Then step onto the goal.',
-        success: "You collected the diamond and reached the goal.",
-        starterCode: `while block_ahead() != "goal":
-    move_right()
+        id: "twice",
+        title: "Play two squares",
+        prompt: "The cursor starts on a legal square. If can_play() is \"yes\", play(). Move down twice, then check can_play() again and play() the second square.",
+        hint: 'if can_play() == "yes": play(). Then move_down() twice and repeat the if.',
+        success: "Both lines of black discs flipped.",
+        starterCode: `move_down()
+play()
 `,
-        game: { kind: "miner", level: 4 },
+        game: { kind: "othello", level: 4 },
         rules: [
-          includes("if ", "Use if so you mine hard blocks and walk through air."),
-          includes("mine_block()", "Mine dirt, stone, and the diamond."),
-          game("Mine the diamond, then stand on the goal."),
-        ],
-      },
-      {
-        id: "build",
-        title: "Build a plank",
-        prompt: "Mine one dirt, face the yellow mark, and call place_block(\"plank\"). Then walk down to the goal.",
-        hint: 'place_block("plank") uses one mined dirt.',
-        success: "The blueprint is finished and you reached the goal.",
-        starterCode: `# Mine dirt, place a plank on the mark, then find the goal.
-move_right()
-`,
-        game: { kind: "miner", level: 5 },
-        rules: [
-          includes('place_block("plank")', 'Call place_block("plank") on the yellow mark.'),
-          includes("mine_block()", "Mine dirt so you have something to build with."),
-          game("Place the plank, then stand on the goal."),
+          includes("if ", "Use if so you only play() on a legal square."),
+          includes("can_play()", "Check can_play() before each play()."),
+          includes("play()", "Drop a disc on each legal square."),
+          includes("move_down()", "Move down to the second line."),
+          game("Flip both black discs."),
         ],
       },
     ],
@@ -644,144 +647,158 @@ run(3)
     id: "flappy-bird",
     emoji: "🐦",
     title: "Flappy Bird",
-    teaser: "Flap, glide, and pipes",
-    story: "A tiny bird flies to the right. flap() hops up, coast() dips down, and glide() stays level. Green cells are pipes. Reach the yellow goal.",
+    teaser: "flap() up, coast() forward",
+    story: `The bird flies right, one square at a time.
+flap() hops up one row and forward one square.
+coast() glides forward and stays on the same row.
+Green blocks are pipes. Flying into a pipe ends the run.
+ahead() tells you the next square: "pipe", "air", or "goal".
+Reach a yellow ring to finish. The sky above the pipes is open, so one hop is enough.`,
     steps: [
       {
         id: "one",
-        title: "Hop over one pipe",
-        prompt: "The pipe is on your row. flap() once, glide() through the gap, then coast() down onto the goal.",
-        hint: "flap(), glide(), coast().",
-        success: "The bird cleared the pipe.",
-        starterCode: `# Hop, then settle onto the goal.
+        title: "Hop, then coast",
+        prompt: "A pipe blocks your row. flap() once to hop above it, then coast() forward onto a yellow ring.",
+        hint: "flap(), then coast() twice.",
+        success: "The bird reached a yellow ring.",
+        starterCode: `# Hop over the pipe, then coast to the ring.
 flap()
 `,
         game: { kind: "flappy", level: 1 },
         rules: [
           includes("flap()", "Call flap() to hop over the pipe."),
-          includes("coast()", "Call coast() to dip onto the goal."),
-          game("The bird has not reached the goal yet."),
+          includes("coast()", "Call coast() to glide forward."),
+          game("The bird has not reached a yellow ring yet."),
         ],
       },
       {
         id: "two",
-        title: "Cross a wider gap",
-        prompt: "Flap over the pipe, glide across, coast down, then glide to the goal.",
-        hint: "flap(), glide(), glide(), coast(), glide().",
-        success: "The bird crossed the wider gap.",
+        title: "Coast across the sky",
+        prompt: "flap() once over the pipe, then coast() along the open row until you reach a yellow ring.",
+        hint: "flap() once, then four coast() calls.",
+        success: "The bird coasted to the ring.",
         starterCode: `flap()
-glide()
 `,
         game: { kind: "flappy", level: 2 },
         rules: [
-          includes("coast()", "Dip with coast() before the last glide."),
-          game("Glide to the goal after you clear the pipe."),
+          includes("flap()", "Hop with flap() before the pipe."),
+          includes("coast()", "coast() glides forward on the same row."),
+          game("Coast to a yellow ring after the hop."),
         ],
       },
       {
         id: "loop",
-        title: "Repeat the flap",
-        prompt: "Two pipes use the same pattern. Loop over the list [1, 2]. Each time, flap(), glide(), then coast().",
-        hint: "for n in [1, 2]: then flap(), glide(), and coast().",
-        success: "The loop cleared both pipes.",
+        title: "Repeat flap and coast",
+        prompt: "The same two commands clear this sky. Loop over [1, 2]. Each time, flap() then coast().",
+        hint: "for n in [1, 2]: then flap() and coast().",
+        success: "The loop reached the yellow ring.",
         starterCode: `for n in [1, 2]:
     flap()
 `,
         game: { kind: "flappy", level: 3 },
         rules: [
-          includes("for ", "Use a for loop so you do not write every flap by hand."),
-          includes("glide()", "glide() flies straight through a gap."),
-          includes("coast()", "coast() dips after each gap."),
-          game("Clear both pipes and land on the goal."),
+          includes("for ", "Use a for loop so you do not write every hop by hand."),
+          includes("flap()", "flap() hops up."),
+          includes("coast()", "coast() glides forward after each hop."),
+          game("Reach a yellow ring."),
         ],
       },
       {
         id: "sense",
-        title: "Fly by looking ahead",
-        prompt: "Pipes are not in a straight line. While ahead() is not \"goal\", compare row() with gap_ahead(). flap() if you are too low, coast() if you are too high, otherwise glide(). After the loop, glide() onto the goal if you are not there yet.",
-        hint: "if row() > gap_ahead(): flap(). elif row() < gap_ahead(): coast(). else: glide().",
-        success: "The bird threaded every pipe.",
+        title: "Flap only at a pipe",
+        prompt: "While ahead() is not \"goal\", flap() if the next square is a pipe. Otherwise coast(). After the loop, coast() onto the ring.",
+        hint: 'if ahead() == "pipe": flap(). else: coast(). Then one more coast().',
+        success: "The bird hopped the pipe and coasted to the ring.",
         starterCode: `while ahead() != "goal":
-    glide()
+    coast()
 `,
         game: { kind: "flappy", level: 4 },
         rules: [
           includes("while ", "Keep flying with a while loop."),
-          includes("gap_ahead()", "Look at the next gap with gap_ahead()."),
-          includes("row()", "Compare gap_ahead() with row()."),
-          includes("flap()", "flap() when the bird is below the gap."),
-          game("Match the gap, then reach the goal."),
+          includes("ahead()", "Look with ahead() before each move."),
+          includes("flap()", "flap() when the next square is a pipe."),
+          includes("coast()", "coast() when the next square is open."),
+          game("Hop the pipe, then coast onto a yellow ring."),
         ],
       },
     ],
   },
   {
-    id: "city-drive",
-    emoji: "🚗",
-    title: "City Drive",
-    teaser: "A plain city and a crate blaster",
-    story: "A plain top-down city. Gray is road, dark squares are buildings, and orange crates block the street. move_up(), move_down(), move_left(), move_right(), and block_ahead() drive the car. shoot() pops the crate directly in front of you. Reach the yellow goal.",
+    id: "bowling",
+    emoji: "🎳",
+    title: "Bowling",
+    teaser: "Aim the ball and roll",
+    story: `Bowling rolls a ball up a wooden lane toward the pins.
+roll() moves the ball one step forward.
+aim_left() and aim_right() slide the ball sideways.
+A pin you touch falls down, and pins touching it fall too.
+Dark squares are gutters. Rolling into a gutter ends the turn.
+pins_ahead() reads the next square: "pin", "lane", "gutter", or "end". Knock down every pin.`,
     steps: [
       {
-        id: "drive",
-        title: "Drive to the goal",
-        prompt: "The goal is two roads to the right. Call move_right() until the car is on it.",
-        hint: "move_right() on two lines.",
-        success: "The car reached the goal.",
-        starterCode: `# Drive along the road.
-move_right()
+        id: "roll",
+        title: "Roll straight",
+        prompt: "The pins are straight ahead. Call roll() until the ball hits them.",
+        hint: "Write roll() on two lines.",
+        success: "Every pin fell.",
+        starterCode: `# Roll toward the pins.
+roll()
 `,
-        game: { kind: "city", level: 1 },
+        game: { kind: "bowling", level: 1 },
         rules: [
-          includes("move_right()", "Call move_right() to drive."),
-          game("The car has not reached the goal yet."),
+          includes("roll()", "Call roll() to send the ball forward."),
+          game("The pins are still standing."),
         ],
       },
       {
-        id: "crate",
-        title: "Pop a crate",
-        prompt: "An orange crate blocks the road. Drive up to it, call shoot(), then drive onto the goal.",
-        hint: "move_right(), shoot(), then move_right() twice.",
-        success: "The crate popped and the car reached the goal.",
-        starterCode: `move_right()
+        id: "aim",
+        title: "Aim, then roll",
+        prompt: "Straight ahead is a gutter. aim_right() so the ball lines up with the pin, then roll() until it falls.",
+        hint: "aim_right(), then roll() three times.",
+        success: "The pin fell.",
+        starterCode: `roll()
 `,
-        game: { kind: "city", level: 2 },
+        game: { kind: "bowling", level: 2 },
         rules: [
-          includes("shoot()", "Call shoot() while the crate is in front of the car."),
-          game("Pop the crate, then stand on the goal."),
+          includes("aim_right()", "Call aim_right() before you roll into the gutter."),
+          includes("roll()", "roll() sends the ball toward the pin."),
+          game("Line up the pin, then knock it down."),
         ],
       },
       {
         id: "loop",
-        title: "Clear a line of crates",
-        prompt: "Three crates sit in a row. Use a while loop and block_ahead(). shoot() a crate, otherwise move_right(). When the goal is ahead, move onto it.",
-        hint: 'Loop while block_ahead() != "goal". If the block is "crate", shoot(). Then move_right() one last time.',
-        success: "The street is clear.",
-        starterCode: `while block_ahead() != "goal":
-    move_right()
+        title: "Roll until the end",
+        prompt: "Keep rolling while pins_ahead() is not \"end\". The center pin knocks down the pins beside it.",
+        hint: 'while pins_ahead() != "end": roll()',
+        success: "The loop cleared the pins.",
+        starterCode: `while pins_ahead() != "end":
+    aim_left()
 `,
-        game: { kind: "city", level: 3 },
+        game: { kind: "bowling", level: 3 },
         rules: [
-          includes("while ", "Use a while loop for the whole row."),
-          includes("shoot()", "Pop each crate with shoot()."),
-          includes("block_ahead()", "Look with block_ahead() before you drive or shoot."),
-          game("Pop every crate, then stand on the goal."),
+          includes("while ", "Use a while loop for the whole lane."),
+          includes("pins_ahead()", "Look with pins_ahead() before each roll."),
+          includes("roll()", "roll() moves the ball forward."),
+          game("Knock down every pin."),
         ],
       },
       {
-        id: "corner",
-        title: "Turn the corner",
-        prompt: "Drive right to the crate, shoot() it, then drive down to the goal.",
-        hint: "Two move_right() calls, shoot(), move_right(), then move_down() twice.",
-        success: "You crossed the city block.",
-        starterCode: `move_right()
-# The crate is further right.
+        id: "spare",
+        title: "Steer around the gutter",
+        prompt: "Roll while the next square is lane or a pin. If pins_ahead() is \"gutter\", aim_right() instead. Stop when pins_ahead() is \"end\".",
+        hint: 'while pins_ahead() != "end": if pins_ahead() == "gutter": aim_right(). else: roll().',
+        success: "You steered around the gutter and got the spare.",
+        starterCode: `while pins_ahead() != "end":
+    roll()
 `,
-        game: { kind: "city", level: 4 },
+        game: { kind: "bowling", level: 4 },
         rules: [
-          includes("shoot()", "Pop the crate before you pass it."),
-          includes("move_down()", "Turn down toward the goal."),
-          game("Pop the crate, then stand on the goal."),
+          includes("while ", "Keep going with a while loop."),
+          includes("if ", "Use if so a gutter means aim and an open lane means roll."),
+          includes("pins_ahead()", "Read pins_ahead() before you choose."),
+          includes("aim_right()", "aim_right() slides away from the gutter."),
+          includes("roll()", "roll() when the next square is safe."),
+          game("Avoid the gutter and knock the pin down."),
         ],
       },
     ],

@@ -125,14 +125,14 @@ describe("python mission curriculum", () => {
   it("has five text games plus the canvas games", () => {
     expect(pythonMissions.map((m) => m.id)).toEqual([
       "mad-libs",
-      "magic-8-ball",
+      "checkers",
       "rps",
       "guess",
       "hangman",
-      "python-miner",
+      "othello",
       "logic-platformer",
       "flappy-bird",
-      "city-drive",
+      "bowling",
       "dino-run",
       "trap-quiz",
     ]);
@@ -157,12 +157,19 @@ describe("python mission curriculum", () => {
   });
 
   it("accepts complete solutions on the last step of each mission", () => {
-    const minerBuild = `move_right()
-mine_block()
+    const checkersCapture = `while look_right() != "goal":
+    if look_right() == "black":
+        jump_right()
+    else:
+        move_right()
 move_right()
-place_block("plank")
+`;
+    const othelloTwice = `if can_play() == "yes":
+    play()
 move_down()
-move_right()
+move_down()
+if can_play() == "yes":
+    play()
 `;
     const platformTiming = `run(2)
 jump()
@@ -172,7 +179,7 @@ jump()
 wait(0.7)
 run(3)
 `;
-    const solutions = [madLibs, eightBall, rps, guess, hangman, minerBuild, platformTiming];
+    const solutions = [madLibs, checkersCapture, rps, guess, hangman, othelloTwice, platformTiming];
     pythonMissions.slice(0, solutions.length).forEach((mission, i) => {
       const last = mission.steps[mission.steps.length - 1]!;
       const check = validatePythonStep(last, solutions[i]!);

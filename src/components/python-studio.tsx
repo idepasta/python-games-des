@@ -200,7 +200,10 @@ export function PythonStudio({ mission, onBack }: { mission: PythonMission; onBa
       </header>
 
       <div className="mx-auto max-w-[1360px] px-4 py-4">
-        <p className="mb-4 text-muted-foreground">{mission.story}</p>
+        <section className="chunky mb-4 whitespace-pre-line rounded-2xl bg-card p-4 leading-6">
+          <div className="mb-2 font-display text-sm font-bold">How to play</div>
+          {mission.story}
+        </section>
         <StepSwitcher titles={mission.steps.map((item) => item.title)} index={step} passed={passed} onGo={go} />
         <section className="chunky mb-4 rounded-2xl bg-card p-4">
           <div className="font-display text-sm text-muted-foreground">Step {step + 1} / {mission.steps.length}: {current.title}</div>

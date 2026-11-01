@@ -13,19 +13,21 @@ noun = input("Give me a noun: ")
 verb = input("Give me a verb: ")
 print(f"{name} saw a {noun} and decided to {verb}!")
 `,
-  "magic-8-ball/import": `import random
+  "checkers/slide": `move_right()
+move_right()
 `,
-  "magic-8-ball/list": `import random
-answers = ["Yes", "No", "Ask again"]
+  "checkers/jump": `jump_right()
 `,
-  "magic-8-ball/ask": `import random
-answers = ["Yes", "No", "Ask again", "Definitely"]
-question = input("Ask the Magic 8-Ball: ")
+  "checkers/loop": `while look_right() != "goal":
+    move_right()
+move_right()
 `,
-  "magic-8-ball/choice": `import random
-answers = ["Yes", "No", "Ask again", "Definitely"]
-question = input("Ask the Magic 8-Ball: ")
-print(random.choice(answers))
+  "checkers/capture": `while look_right() != "goal":
+    if look_right() == "black":
+        jump_right()
+    else:
+        move_right()
+move_right()
 `,
   "rps/import": `import random
 `,
@@ -143,34 +145,23 @@ while lives > 0:
         print("You won!")
         break
 `,
-  "python-miner/walk": `move_right()
-move_right()
+  "othello/drop": `play()
 `,
-  "python-miner/mine": `move_right()
-mine_block()
+  "othello/walk": `move_right()
 move_right()
 move_right()
+play()
 `,
-  "python-miner/loop": `while block_ahead() != "goal":
-    if block_ahead() == "dirt":
-        mine_block()
-    else:
-        move_right()
-move_right()
+  "othello/loop": `while can_play() != "yes":
+    move_right()
+play()
 `,
-  "python-miner/diamond": `while block_ahead() != "goal":
-    if block_ahead() == "air":
-        move_right()
-    else:
-        mine_block()
-move_right()
-`,
-  "python-miner/build": `move_right()
-mine_block()
-move_right()
-place_block("plank")
+  "othello/twice": `if can_play() == "yes":
+    play()
 move_down()
-move_right()
+move_down()
+if can_play() == "yes":
+    play()
 `,
   "logic-platformer/run": `run(6)
 `,
@@ -193,52 +184,42 @@ wait(0.7)
 run(3)
 `,
   "flappy-bird/one": `flap()
-glide()
+coast()
 coast()
 `,
   "flappy-bird/two": `flap()
-glide()
-glide()
 coast()
-glide()
+coast()
+coast()
+coast()
 `,
   "flappy-bird/loop": `for n in [1, 2]:
     flap()
-    glide()
     coast()
 `,
   "flappy-bird/sense": `while ahead() != "goal":
-    gap = gap_ahead()
-    if row() > gap:
+    if ahead() == "pipe":
         flap()
-    elif row() < gap:
+    else:
         coast()
+coast()
+`,
+  "bowling/roll": `roll()
+roll()
+`,
+  "bowling/aim": `aim_right()
+roll()
+roll()
+roll()
+`,
+  "bowling/loop": `while pins_ahead() != "end":
+    roll()
+`,
+  "bowling/spare": `while pins_ahead() != "end":
+    if pins_ahead() == "gutter":
+        aim_right()
     else:
-        glide()
-if ahead() == "goal":
-    glide()
-`,
-  "city-drive/drive": `move_right()
-move_right()
-`,
-  "city-drive/crate": `move_right()
-shoot()
-move_right()
-move_right()
-`,
-  "city-drive/loop": `while block_ahead() != "goal":
-    if block_ahead() == "crate":
-        shoot()
-    else:
-        move_right()
-move_right()
-`,
-  "city-drive/corner": `move_right()
-move_right()
-shoot()
-move_right()
-move_down()
-move_down()
+        roll()
 `,
   "dino-run/cactus": `jump()
 run()

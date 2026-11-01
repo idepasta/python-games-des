@@ -44,8 +44,8 @@ export function CodingStudio() {
       <h1 className="font-display text-4xl font-bold">Phone Game Studio</h1>
       <p className="mt-3 max-w-2xl text-muted-foreground">
         {tutor
-          ? "Tutor preview: every mission is open, including Flappy Bird, City Drive, Dino Run, and Trap Quiz."
-          : "Split-screen missions: type on the left and watch a live phone on the right. Start with Tic-Tac-Toe, then build Python mini-games, a miner, and a platformer."}
+          ? "Tutor preview: every mission is open, including Checkers, Othello, Flappy Bird, Bowling, and Trap Quiz."
+          : "Split-screen missions: type on the left and watch a live phone on the right. Start with Tic-Tac-Toe, then build Checkers, Othello, and a platformer."}
       </p>
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         <button onClick={() => setActive("tic-tac-toe")} className="chunky rounded-2xl bg-card p-5 text-left hover:bg-secondary">

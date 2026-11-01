@@ -1,99 +1,96 @@
 import { useEffect, useRef, useState } from "react";
 import type { DinoFrame, GameView, MinerFrame, PlatformLevel, PlatformSample } from "@/lib/python-vm";
 
-function poly(ctx: CanvasRenderingContext2D, pts: { sx: number; sy: number }[], color: string) {
+function boardMetrics(frame: MinerFrame, width: number, height: number) {
+  const rows = frame.rows.length;
+  const cols = frame.rows[0]?.length ?? 1;
+  const cell = Math.min((width - 16) / cols, (height - 28) / rows);
+  return { rows, cols, cell, ox: (width - cell * cols) / 2, oy: 8 };
+}
+
+function fillDisc(ctx: CanvasRenderingContext2D, cx: number, cy: number, radius: number, color: string) {
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.moveTo(pts[0]!.sx, pts[0]!.sy);
-  for (let i = 1; i < pts.length; i += 1) ctx.lineTo(pts[i]!.sx, pts[i]!.sy);
-  ctx.closePath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.fill();
 }
 
-function iso(x: number, y: number, z: number, originX: number, originY: number, tile: number) {
-  return { sx: originX + (x - y) * tile, sy: originY + (x + y) * tile * 0.5 - z };
-}
-
-function isoCube(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  height: number,
-  color: string,
-  originX: number,
-  originY: number,
-  tile: number,
-) {
-  const p = (px: number, py: number, pz: number) => iso(px, py, pz, originX, originY, tile);
-  const topLeft = p(x, y, height);
-  const topRight = p(x + 1, y, height);
-  const topFront = p(x + 1, y + 1, height);
-  const topBack = p(x, y + 1, height);
-  const groundRight = p(x + 1, y, 0);
-  const groundFront = p(x + 1, y + 1, 0);
-  const groundBack = p(x, y + 1, 0);
-  poly(ctx, [groundBack, groundFront, topFront, topBack], shade(color, -48));
-  poly(ctx, [groundRight, groundFront, topFront, topRight], shade(color, -22));
-  poly(ctx, [topLeft, topRight, topFront, topBack], shade(color, 28));
-}
-
-function blockHeight(cell: string): number {
-  if (cell === "D") return 16;
-  if (cell === "S") return 18;
-  if (cell === "*") return 14;
-  if (cell === "G") return 8;
-  if (cell === "=") return 10;
-  if (cell === "#" || cell === "b") return cell === "b" ? 6 : 20;
-  return 3;
-}
-
-function blockPaint(cell: string): string {
-  if (cell === "D") return "#9a6232";
-  if (cell === "S") return "#94a3b8";
-  if (cell === "*") return "#5eead4";
-  if (cell === "G") return "#facc15";
-  if (cell === "=") return "#d97706";
-  if (cell === "b") return "#fde68a";
-  if (cell === "#" ) return "#334155";
-  return "#78716c";
-}
-
-function drawMiner(ctx: CanvasRenderingContext2D, frame: MinerFrame, width: number, height: number) {
-  const sky = ctx.createLinearGradient(0, 0, 0, height);
-  sky.addColorStop(0, "#1e293b");
-  sky.addColorStop(1, "#44403c");
-  ctx.fillStyle = sky;
+function drawCheckers(ctx: CanvasRenderingContext2D, frame: MinerFrame, width: number, height: number) {
+  ctx.fillStyle = "#3f2a1d";
   ctx.fillRect(0, 0, width, height);
-  const rows = frame.rows.length;
-  const cols = frame.rows[0]?.length ?? 1;
-  const tile = Math.min(22, 168 / (cols + rows));
-  const originX = width / 2;
-  const originY = 34;
+  const { cell, ox, oy } = boardMetrics(frame, width, height);
   frame.rows.forEach((row, y) => {
-    row.forEach((cell, x) => {
-      isoCube(ctx, x, y, blockHeight(cell), blockPaint(cell), originX, originY, tile);
-      if (x === frame.x && y === frame.y) {
-        const feet = blockHeight(cell) + 1;
-        const spot = iso(x + 0.5, y + 0.5, feet + 10, originX, originY, tile);
-        ctx.fillStyle = "rgba(0,0,0,0.28)";
+    row.forEach((square, x) => {
+      const px = ox + x * cell;
+      const py = oy + y * cell;
+      ctx.fillStyle = square === "+" ? "#f3d7a1" : "#8b5a2b";
+      ctx.fillRect(px, py, cell - 1, cell - 1);
+      const cx = px + cell / 2;
+      const cy = py + cell / 2;
+      const radius = cell * 0.28;
+      if (square === "b") fillDisc(ctx, cx, cy, radius, "#111827");
+      if (square === "G") {
+        ctx.strokeStyle = "#facc15";
+        ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.ellipse(spot.sx, spot.sy + 8, 7, 3, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#166534";
-        ctx.fillRect(spot.sx - 5, spot.sy - 4, 10, 12);
-        ctx.fillStyle = "#fde68a";
-        ctx.beginPath();
-        ctx.arc(spot.sx, spot.sy - 8, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#fbbf24";
-        const lamp = frame.facing === "left" ? -6 : frame.facing === "up" ? -2 : 6;
-        ctx.fillRect(spot.sx + lamp, spot.sy - 6, 4, 3);
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
       }
     });
   });
+  const cx = ox + frame.x * cell + cell / 2;
+  const cy = oy + frame.y * cell + cell / 2;
+  fillDisc(ctx, cx, cy, cell * 0.28, "#dc2626");
   ctx.fillStyle = "#f8fafc";
   ctx.font = "11px sans-serif";
-  ctx.fillText(`Dirt ${frame.dirt}   Stone ${frame.stone}   Diamond ${frame.diamond}`, 8, height - 8);
+  ctx.fillText("Red moves diagonally toward the top.", 8, height - 8);
+}
+
+function drawOthello(ctx: CanvasRenderingContext2D, frame: MinerFrame, width: number, height: number) {
+  ctx.fillStyle = "#14532d";
+  ctx.fillRect(0, 0, width, height);
+  const { cell, ox, oy } = boardMetrics(frame, width, height);
+  frame.rows.forEach((row, y) => {
+    row.forEach((square, x) => {
+      const px = ox + x * cell;
+      const py = oy + y * cell;
+      ctx.fillStyle = "#166534";
+      ctx.fillRect(px + 1, py + 1, cell - 2, cell - 2);
+      const cx = px + cell / 2;
+      const cy = py + cell / 2;
+      if (square === "W") fillDisc(ctx, cx, cy, cell * 0.32, "#f8fafc");
+      if (square === "B") fillDisc(ctx, cx, cy, cell * 0.32, "#0f172a");
+    });
+  });
+  ctx.strokeStyle = "#facc15";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(ox + frame.x * cell + 2, oy + frame.y * cell + 2, cell - 5, cell - 5);
+  ctx.fillStyle = "#f8fafc";
+  ctx.font = "11px sans-serif";
+  ctx.fillText("White to play. Flip every black disc.", 8, height - 8);
+}
+
+function drawBowling(ctx: CanvasRenderingContext2D, frame: MinerFrame, width: number, height: number) {
+  ctx.fillStyle = "#44403c";
+  ctx.fillRect(0, 0, width, height);
+  const { cell, ox, oy } = boardMetrics(frame, width, height);
+  frame.rows.forEach((row, y) => {
+    row.forEach((square, x) => {
+      const px = ox + x * cell;
+      const py = oy + y * cell;
+      ctx.fillStyle = square === "#" ? "#1c1917" : "#d6b48a";
+      ctx.fillRect(px, py, cell - 1, cell - 1);
+      if (square === "X") {
+        fillDisc(ctx, px + cell / 2, py + cell / 2, cell * 0.22, "#f8fafc");
+        ctx.fillStyle = "#dc2626";
+        ctx.fillRect(px + cell * 0.38, py + cell * 0.42, cell * 0.24, cell * 0.08);
+      }
+    });
+  });
+  fillDisc(ctx, ox + frame.x * cell + cell / 2, oy + frame.y * cell + cell / 2, cell * 0.26, "#2563eb");
+  ctx.fillStyle = "#f8fafc";
+  ctx.font = "11px sans-serif";
+  ctx.fillText("Knock down every pin.", 8, height - 8);
 }
 
 function drawFlappy(ctx: CanvasRenderingContext2D, frame: MinerFrame, width: number, height: number) {
@@ -164,54 +161,7 @@ function drawFlappy(ctx: CanvasRenderingContext2D, frame: MinerFrame, width: num
   ctx.arc(bx + 5, by - 2, 1.2, 0, Math.PI * 2);
   ctx.fill();
   ctx.font = "11px sans-serif";
-  ctx.fillText("Flap through the pipes", 8, height - 8);
-}
-
-function cityKind(cell: string): "building" | "road" | "crate" | "goal" {
-  if (cell === "T") return "crate";
-  if (cell === "G") return "goal";
-  if (cell === "." || cell === "P") return "road";
-  return "building";
-}
-
-function drawCity(ctx: CanvasRenderingContext2D, frame: MinerFrame, width: number, height: number) {
-  const sky = ctx.createLinearGradient(0, 0, 0, height);
-  sky.addColorStop(0, "#7dd3fc");
-  sky.addColorStop(0.45, "#e2e8f0");
-  sky.addColorStop(1, "#94a3b8");
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, width, height);
-  const rows = frame.rows.length;
-  const cols = frame.rows[0]?.length ?? 1;
-  const tile = Math.min(20, 160 / (cols + rows));
-  const originX = width / 2;
-  const originY = 36;
-  frame.rows.forEach((row, y) => {
-    row.forEach((cell, x) => {
-      const kind = cityKind(cell);
-      const tall = kind === "building" ? 26 : kind === "crate" ? 12 : kind === "goal" ? 5 : 3;
-      const color = kind === "building" ? "#1e293b" : kind === "crate" ? "#f97316" : kind === "goal" ? "#facc15" : "#cbd5e1";
-      isoCube(ctx, x, y, tall, color, originX, originY, tile);
-      if (kind === "building") {
-        const win = iso(x + 0.35, y + 0.35, tall - 2, originX, originY, tile);
-        ctx.fillStyle = "#fde68a";
-        ctx.fillRect(win.sx, win.sy, 3, 3);
-      }
-      if (x === frame.x && y === frame.y) {
-        const spot = iso(x + 0.2, y + 0.25, tall + 1, originX, originY, tile);
-        ctx.fillStyle = "#1d4ed8";
-        ctx.fillRect(spot.sx, spot.sy - 8, 16, 8);
-        ctx.fillStyle = "#93c5fd";
-        ctx.fillRect(spot.sx + 3, spot.sy - 13, 8, 5);
-        ctx.fillStyle = "#0f172a";
-        const nose = frame.facing === "left" ? -4 : frame.facing === "up" ? 2 : 14;
-        ctx.fillRect(spot.sx + nose, spot.sy - 6, 4, 3);
-      }
-    });
-  });
-  ctx.fillStyle = "#0f172a";
-  ctx.font = "11px sans-serif";
-  ctx.fillText("Drive the street. Pop the crates.", 8, height - 8);
+  ctx.fillText("flap() hops. coast() glides forward.", 8, height - 8);
 }
 
 function shade(hex: string, amount: number): string {
@@ -410,14 +360,15 @@ export function GameCanvas({ view }: { view: GameView }) {
           setNote(view.message || (view.status === "win" ? "Level clear." : "Keep editing the script."));
         }
       }, 70);
-    } else if (view.kind === "miner" || view.kind === "flappy" || view.kind === "city") {
+    } else if (view.kind === "checkers" || view.kind === "othello" || view.kind === "flappy" || view.kind === "bowling") {
       const paint = () => {
         const frame = view.frames[Math.min(index, view.frames.length - 1)];
         if (!frame) return;
         fit();
         if (view.kind === "flappy") drawFlappy(ctx, frame, width, height);
-        else if (view.kind === "city") drawCity(ctx, frame, width, height);
-        else drawMiner(ctx, frame, width, height);
+        else if (view.kind === "checkers") drawCheckers(ctx, frame, width, height);
+        else if (view.kind === "othello") drawOthello(ctx, frame, width, height);
+        else drawBowling(ctx, frame, width, height);
       };
       paint();
       timer = window.setInterval(() => {

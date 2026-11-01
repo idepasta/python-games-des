@@ -11,14 +11,6 @@ import {
   type PyValue,
 } from "@/lib/python-vm";
 
-export const MINER_LEVELS = [
-  ["#####", "#P.G#", "#####"],
-  ["######", "#P.DG#", "######"],
-  ["#######", "#PDDDG#", "#######"],
-  ["#######", "#PDS*G#", "#######"],
-  ["######", "#P.Db#", "#...G#", "######"],
-] as const;
-
 export const PLATFORM_LEVELS: PlatformLevel[] = [
   {
     name: "Flat run",
@@ -70,163 +62,14 @@ export const PLATFORM_LEVELS: PlatformLevel[] = [
   },
 ];
 
-const DIRS = {
-  up: { x: 0, y: -1 },
-  down: { x: 0, y: 1 },
-  left: { x: -1, y: 0 },
-  right: { x: 1, y: 0 },
-} as const;
-
 type Facing = MinerFrame["facing"];
-type MinerState = {
-  rows: string[][];
-  x: number;
-  y: number;
-  facing: Facing;
-  dirt: number;
-  stone: number;
-  diamond: number;
-  status: GameView["status"];
-  message: string;
-};
 
 function cloneRows(rows: string[][]): string[][] {
   return rows.map((row) => [...row]);
 }
 
-function frameOf(state: MinerState): MinerFrame {
-  return {
-    rows: cloneRows(state.rows),
-    x: state.x,
-    y: state.y,
-    facing: state.facing,
-    dirt: state.dirt,
-    stone: state.stone,
-    diamond: state.diamond,
-  };
-}
-
-function cellName(ch: string): string {
-  if (ch === "." || ch === "P") return "air";
-  if (ch === "D") return "dirt";
-  if (ch === "S") return "stone";
-  if (ch === "*") return "diamond";
-  if (ch === "G") return "goal";
-  if (ch === "b") return "mark";
-  if (ch === "=") return "plank";
-  return "wall";
-}
-
 function emptyGame(kind: GameView["kind"]): GameView {
   return { kind, status: "playing", message: "", frames: [], dino: [], level: null, commands: [], samples: [] };
-}
-
-export function createMiner(level: number): MinerState {
-  const pattern = MINER_LEVELS[level - 1];
-  if (!pattern) throw new GameCrash("That miner level is missing.");
-  const rows = pattern.map((row) => row.split(""));
-  let x = 1;
-  let y = 1;
-  rows.forEach((row, rowIndex) => {
-    row.forEach((cell, col) => {
-      if (cell === "P") {
-        x = col;
-        y = rowIndex;
-        row[col] = ".";
-      }
-    });
-  });
-  return { rows, x, y, facing: "right", dirt: 0, stone: 0, diamond: 0, status: "playing", message: "" };
-}
-
-function aheadCell(state: MinerState): { x: number; y: number; name: string } {
-  const dir = DIRS[state.facing];
-  const x = state.x + dir.x;
-  const y = state.y + dir.y;
-  const ch = state.rows[y]?.[x] ?? "#";
-  return { x, y, name: cellName(ch) };
-}
-
-function marksLeft(state: MinerState): number {
-  return state.rows.flat().filter((cell) => cell === "b").length;
-}
-
-function finishIfWon(state: MinerState) {
-  const here = state.rows[state.y]?.[state.x];
-  if (here === "G" && marksLeft(state) === 0) {
-    state.status = "win";
-    state.message = "You cleared the mine!";
-  } else if (here === "G") {
-    state.status = "crash";
-    state.message = "The blueprint still needs planks.";
-  }
-}
-
-function minerAct(state: MinerState, name: string, args: PyValue[]): PyValue {
-  if (state.status !== "playing") throw new GameCrash(state.message || "The level is already over.");
-  if (name === "block_ahead") return aheadCell(state).name;
-  if (name === "move_up" || name === "move_down" || name === "move_left" || name === "move_right") {
-    const facing = name.slice(5) as Facing;
-    state.facing = facing;
-    const next = aheadCell(state);
-    const walkable = next.name === "air" || next.name === "goal" || next.name === "plank" || next.name === "mark";
-    if (!walkable) throw new GameCrash(`You bumped into ${next.name}. Mine it or go around it.`);
-    state.x = next.x;
-    state.y = next.y;
-    finishIfWon(state);
-    return null;
-  }
-  if (name === "mine_block") {
-    const next = aheadCell(state);
-    if (next.name !== "dirt" && next.name !== "stone" && next.name !== "diamond") {
-      throw new GameCrash(next.name === "air" ? "There is nothing to mine." : `You cannot mine ${next.name}.`);
-    }
-    if (next.name === "dirt") state.dirt += 1;
-    if (next.name === "stone") state.stone += 1;
-    if (next.name === "diamond") state.diamond += 1;
-    state.rows[next.y]![next.x] = ".";
-    state.message = next.name === "diamond" ? "You found a diamond!" : `You mined ${next.name}.`;
-    return null;
-  }
-  if (name === "place_block") {
-    const kind = args[0];
-    if (kind !== "plank") throw new GameCrash('place_block("plank") builds on a yellow mark.');
-    if (state.dirt < 1) throw new GameCrash("Mine dirt first. One dirt makes one plank.");
-    const next = aheadCell(state);
-    if (next.name !== "mark") throw new GameCrash("Face a yellow blueprint mark, then place a plank.");
-    state.dirt -= 1;
-    state.rows[next.y]![next.x] = "=";
-    state.message = "You placed a plank.";
-    return null;
-  }
-  throw new GameCrash(`${name}() is not a miner command.`);
-}
-
-export function minerHooks(level: number): PyHooks {
-  const state = createMiner(level);
-  const view = emptyGame("miner");
-  view.frames.push(frameOf(state));
-  const hooks: PyHooks = {
-    gameView: view,
-    game(name, args) {
-      try {
-        const value = minerAct(state, name, args);
-        view.frames.push(frameOf(state));
-        view.status = state.status;
-        view.message = state.message;
-        if (state.status === "crash") throw new GameCrash(state.message);
-        return value;
-      } catch (err) {
-        if (view.status !== "crash") {
-          view.status = "crash";
-          view.message = err instanceof Error ? err.message : "The miner crashed.";
-          view.frames.push(frameOf(state));
-        }
-        throw err;
-      }
-    },
-  };
-  return hooks;
 }
 
 const TILE = 24;
@@ -426,17 +269,31 @@ export function platformerHooks(level: number): PyHooks {
 }
 
 export const FLAPPY_LEVELS = [
-  ["......", "......", "......", "P.#G..", "..#...", "......"],
-  ["........", "........", "........", "P.#..G..", "..#.....", "........"],
-  ["........", "........", "........", "P.#..#G.", "..#..#..", "........"],
-  ["..........", "..#.......", "........G.", "P.#.......", "..#..##...", ".........."],
+  ["...G", "...G", "P.#.", "...G"],
+  [".....G", ".....G", "P..#..", ".....G"],
+  ["....G", "....G", "...#.", "P.#.G"],
+  ["......G.", "......G.", "P..#....", "........"],
 ] as const;
 
-export const CITY_LEVELS = [
-  ["#####", "#P.G#", "#####"],
-  ["######", "#P.TG#", "######"],
-  ["#######", "#PTTTG#", "#######"],
-  ["######", "#P..T#", "#.##.#", "#...G#", "######"],
+export const CHECKERS_LEVELS = [
+  ["+.+G", ".+.+", "+r+."],
+  ["+.+G", ".+b+", "+r+."],
+  ["+.+G", ".+.+", "+.+.", "r+.+"],
+  ["+.+.+", ".+.+G", "+.+.+", ".+b+.", "+.+.+", "r+.+."],
+] as const;
+
+export const OTHELLO_LEVELS = [
+  [".W.", "PBW", ".W."],
+  ["W...", ".B..", "..B.", "P..."],
+  ["W...", ".B..", "..B.", "P..."],
+  ["PBW.", "....", ".BW.", "...."],
+] as const;
+
+export const BOWLING_LEVELS = [
+  ["#X.X#", "#.X.#", "#...#", "#.P.#", "#####"],
+  ["###X#", "#...#", "#...#", "#.P.#", "#####"],
+  ["#XXX#", "#...#", "#...#", "#.P.#", "#####"],
+  ["###X#", "##..#", "##P.#", "#####"],
 ] as const;
 
 type GridState = {
@@ -463,10 +320,10 @@ function findStart(rows: string[][], mark: string): { x: number; y: number } {
   return { x: 1, y: 1 };
 }
 
-function makeGrid(pattern: readonly string[] | undefined, missing: string): GridState {
+function makeGrid(pattern: readonly string[] | undefined, missing: string, mark = "P"): GridState {
   if (!pattern) throw new GameCrash(missing);
   const rows = pattern.map((row) => row.split(""));
-  const start = findStart(rows, "P");
+  const start = findStart(rows, mark);
   return { rows, x: start.x, y: start.y, facing: "right", status: "playing", message: "" };
 }
 
@@ -508,7 +365,7 @@ function flappyAct(state: GridState, name: string): PyValue {
   if (name === "row") return state.y;
   if (name === "gap_ahead") return gapAhead(state);
   if (name === "ahead") return flappyCell(state.rows[state.y]?.[state.x + 1]);
-  const dy = name === "flap" ? -1 : name === "coast" ? 1 : name === "glide" ? 0 : null;
+  const dy = name === "flap" ? -1 : name === "coast" || name === "glide" ? 0 : null;
   if (dy === null) throw new GameCrash(`${name}() is not a flappy command.`);
   const nx = state.x + 1;
   const ny = state.y + dy;
@@ -524,66 +381,186 @@ function flappyAct(state: GridState, name: string): PyValue {
   return null;
 }
 
-function cityName(ch: string | undefined): "wall" | "road" | "crate" | "goal" {
-  if (ch === "T") return "crate";
+function checkersName(ch: string | undefined): string {
+  if (ch === "b") return "black";
   if (ch === "G") return "goal";
-  if (ch === "." || ch === "P") return "road";
-  return "wall";
+  if (ch === "." || ch === "r" || ch === "P") return "empty";
+  if (ch === "+") return "light";
+  return "edge";
 }
 
-function cityAhead(state: GridState): { x: number; y: number; name: ReturnType<typeof cityName> } {
-  const dir = DIRS[state.facing];
-  const x = state.x + dir.x;
-  const y = state.y + dir.y;
-  return { x, y, name: cityName(state.rows[y]?.[x]) };
-}
-
-function cratesLeft(state: GridState): number {
-  return state.rows.flat().filter((cell) => cell === "T").length;
-}
-
-function cityWin(state: GridState) {
-  if (state.rows[state.y]?.[state.x] !== "G") return;
-  if (cratesLeft(state) > 0) {
-    state.status = "crash";
-    state.message = "Pop every crate before the goal.";
-    return;
-  }
+function checkersWin(state: GridState) {
   state.status = "win";
-  state.message = "You reached the goal.";
+  state.message = "Your piece reached the yellow square.";
 }
 
-function cityAct(state: GridState, name: string): PyValue {
-  if (state.status === "win") return name === "block_ahead" ? "goal" : null;
-  if (state.status !== "playing") throw new GameCrash(state.message || "The drive is already over.");
-  if (name === "block_ahead") return cityAhead(state).name;
-  if (name === "shoot") {
-    const next = cityAhead(state);
-    if (next.name !== "crate") throw new GameCrash("Face a crate, then call shoot().");
-    state.rows[next.y]![next.x] = ".";
-    state.message = "The crate popped.";
-    return null;
-  }
-  if (name === "move_up" || name === "move_down" || name === "move_left" || name === "move_right") {
-    state.facing = name.slice(5) as Facing;
-    const next = cityAhead(state);
-    if (next.name !== "road" && next.name !== "goal") {
-      throw new GameCrash(next.name === "crate" ? "A crate is in the way. shoot() pops it." : "You bumped a building.");
+function checkersLook(state: GridState, dx: number): string {
+  if (state.status === "win") return "goal";
+  return checkersName(state.rows[state.y - 1]?.[state.x + dx]);
+}
+
+function checkersSlide(state: GridState, dx: number) {
+  const nx = state.x + dx;
+  const ny = state.y - 1;
+  const name = checkersName(state.rows[ny]?.[nx]);
+  if (name === "black") throw new GameCrash("A black piece is there. jump_left() or jump_right() hops over it.");
+  if (name === "light") throw new GameCrash("Checkers stays on the dark squares.");
+  if (name !== "empty" && name !== "goal") throw new GameCrash("That move leaves the board.");
+  state.x = nx;
+  state.y = ny;
+  if (name === "goal") checkersWin(state);
+}
+
+function checkersJump(state: GridState, dx: number) {
+  const midX = state.x + dx;
+  const midY = state.y - 1;
+  const landX = state.x + dx * 2;
+  const landY = state.y - 2;
+  if (state.rows[midY]?.[midX] !== "b") throw new GameCrash("Jump only when a black piece is on the next diagonal square.");
+  const name = checkersName(state.rows[landY]?.[landX]);
+  if (name !== "empty" && name !== "goal") throw new GameCrash("The landing square is not open.");
+  state.rows[midY]![midX] = ".";
+  state.x = landX;
+  state.y = landY;
+  state.message = "You captured a black piece.";
+  if (name === "goal") checkersWin(state);
+}
+
+function checkersAct(state: GridState, name: string): PyValue {
+  if (state.status === "win") return name === "look_left" || name === "look_right" ? "goal" : null;
+  if (state.status !== "playing") throw new GameCrash(state.message || "The game is already over.");
+  if (name === "look_left") return checkersLook(state, -1);
+  if (name === "look_right") return checkersLook(state, 1);
+  if (name === "move_left") { checkersSlide(state, -1); return null; }
+  if (name === "move_right") { checkersSlide(state, 1); return null; }
+  if (name === "jump_left") { checkersJump(state, -1); return null; }
+  if (name === "jump_right") { checkersJump(state, 1); return null; }
+  throw new GameCrash(`${name}() is not a checkers command.`);
+}
+
+const OTHELLO_DIRS = [
+  [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1],
+] as const;
+
+function othelloFlips(state: GridState, x: number, y: number): { x: number; y: number }[] {
+  if (state.rows[y]?.[x] !== ".") return [];
+  const found: { x: number; y: number }[] = [];
+  for (const [dx, dy] of OTHELLO_DIRS) {
+    const line: { x: number; y: number }[] = [];
+    let cx = x + dx;
+    let cy = y + dy;
+    while (state.rows[cy]?.[cx] === "B") {
+      line.push({ x: cx, y: cy });
+      cx += dx;
+      cy += dy;
     }
-    state.x = next.x;
-    state.y = next.y;
-    if (next.name === "goal") state.rows[state.y]![state.x] = "G";
-    cityWin(state);
-    return null;
+    if (line.length && state.rows[cy]?.[cx] === "W") found.push(...line);
   }
-  throw new GameCrash(`${name}() is not a city command.`);
+  return found;
 }
 
-function gridHooks(kind: "flappy" | "city", act: (state: GridState, name: string) => PyValue, pattern: readonly string[] | undefined, missing: string): PyHooks {
-  const state = makeGrid(pattern, missing);
+function othelloBlacks(state: GridState): number {
+  return state.rows.flat().filter((cell) => cell === "B").length;
+}
+
+function othelloSquare(state: GridState): string {
+  const ch = state.rows[state.y]?.[state.x];
+  if (ch === undefined) return "edge";
+  if (ch === "W") return "white";
+  if (ch === "B") return "black";
+  return "empty";
+}
+
+function othelloAct(state: GridState, name: string): PyValue {
+  if (state.status === "win") {
+    if (name === "can_play") return "no";
+    if (name === "square") return othelloSquare(state);
+    return null;
+  }
+  if (state.status !== "playing") throw new GameCrash(state.message || "The game is already over.");
+  if (name === "square") return othelloSquare(state);
+  if (name === "can_play") return othelloFlips(state, state.x, state.y).length ? "yes" : "no";
+  if (name === "move_up" || name === "move_down" || name === "move_left" || name === "move_right") {
+    const dx = name === "move_left" ? -1 : name === "move_right" ? 1 : 0;
+    const dy = name === "move_up" ? -1 : name === "move_down" ? 1 : 0;
+    const nx = state.x + dx;
+    const ny = state.y + dy;
+    if (state.rows[ny]?.[nx] === undefined) throw new GameCrash("The cursor left the board.");
+    state.x = nx;
+    state.y = ny;
+    state.facing = name.slice(5) as Facing;
+    return null;
+  }
+  if (name === "play") {
+    const flips = othelloFlips(state, state.x, state.y);
+    if (!flips.length) throw new GameCrash("That square does not flip a black disc.");
+    state.rows[state.y]![state.x] = "W";
+    for (const disc of flips) state.rows[disc.y]![disc.x] = "W";
+    state.message = flips.length === 1 ? "One disc flipped." : `${flips.length} discs flipped.`;
+    if (othelloBlacks(state) === 0) {
+      state.status = "win";
+      state.message = "Every black disc flipped to white.";
+    }
+    return null;
+  }
+  throw new GameCrash(`${name}() is not an othello command.`);
+}
+
+function bowlingPins(state: GridState): number {
+  return state.rows.flat().filter((cell) => cell === "X").length;
+}
+
+function bowlingKnock(state: GridState, x: number, y: number) {
+  for (let dy = -1; dy <= 1; dy += 1) {
+    for (let dx = -1; dx <= 1; dx += 1) {
+      if (state.rows[y + dy]?.[x + dx] === "X") state.rows[y + dy]![x + dx] = ".";
+    }
+  }
+  if (bowlingPins(state) === 0) {
+    state.status = "win";
+    state.message = "Strike! Every pin is down.";
+  }
+}
+
+function bowlingAct(state: GridState, name: string): PyValue {
+  if (state.status === "win") return name === "pins_ahead" ? "end" : null;
+  if (state.status !== "playing") throw new GameCrash(state.message || "The frame is already over.");
+  if (name === "pins_ahead") {
+    const ch = state.rows[state.y - 1]?.[state.x];
+    if (ch === undefined) return "end";
+    if (ch === "#") return "gutter";
+    if (ch === "X") return "pin";
+    return "lane";
+  }
+  if (name === "aim_left" || name === "aim_right") {
+    const nx = state.x + (name === "aim_left" ? -1 : 1);
+    const ch = state.rows[state.y]?.[nx];
+    if (ch === "#") throw new GameCrash("That way is the gutter.");
+    if (ch !== "." && ch !== "X") throw new GameCrash("You cannot aim off the lane.");
+    state.x = nx;
+    state.facing = name === "aim_left" ? "left" : "right";
+    if (ch === "X") bowlingKnock(state, nx, state.y);
+    return null;
+  }
+  if (name === "roll") {
+    const ny = state.y - 1;
+    const ch = state.rows[ny]?.[state.x];
+    if (ch === undefined) throw new GameCrash("The ball rolled past the pins.");
+    if (ch === "#") throw new GameCrash("The ball rolled into the gutter.");
+    if (ch !== "." && ch !== "X") throw new GameCrash("The ball left the lane.");
+    state.y = ny;
+    state.facing = "up";
+    if (ch === "X") bowlingKnock(state, state.x, ny);
+    return null;
+  }
+  throw new GameCrash(`${name}() is not a bowling command.`);
+}
+
+function gridHooks(kind: "flappy" | "checkers" | "othello" | "bowling", act: (state: GridState, name: string) => PyValue, pattern: readonly string[] | undefined, missing: string, mark = "P"): PyHooks {
+  const state = makeGrid(pattern, missing, mark);
   const view = emptyGame(kind);
   view.frames.push(gridFrame(state));
-  const draw = new Set(["flap", "coast", "glide", "shoot", "move_up", "move_down", "move_left", "move_right"]);
+  const draw = new Set(["flap", "coast", "glide", "move_up", "move_down", "move_left", "move_right", "jump_left", "jump_right", "play", "aim_left", "aim_right", "roll"]);
   return {
     gameView: view,
     game(name, _args) {
@@ -610,8 +587,16 @@ export function flappyHooks(level: number): PyHooks {
   return gridHooks("flappy", flappyAct, FLAPPY_LEVELS[level - 1], "That flappy level is missing.");
 }
 
-export function cityHooks(level: number): PyHooks {
-  return gridHooks("city", cityAct, CITY_LEVELS[level - 1], "That city level is missing.");
+export function checkersHooks(level: number): PyHooks {
+  return gridHooks("checkers", checkersAct, CHECKERS_LEVELS[level - 1], "That checkers level is missing.", "r");
+}
+
+export function othelloHooks(level: number): PyHooks {
+  return gridHooks("othello", othelloAct, OTHELLO_LEVELS[level - 1], "That othello level is missing.");
+}
+
+export function bowlingHooks(level: number): PyHooks {
+  return gridHooks("bowling", bowlingAct, BOWLING_LEVELS[level - 1], "That bowling level is missing.");
 }
 
 const DINO_LEVELS = ["PCG", "PBG", "PCB.CBG", "PC.B.CG"] as const;
@@ -708,10 +693,11 @@ export function dinoHooks(level: number): PyHooks {
   };
 }
 
-export function hooksForGame(kind: "miner" | "platformer" | "flappy" | "city" | "dino", level: number): PyHooks {
-  if (kind === "miner") return minerHooks(level);
+export function hooksForGame(kind: "checkers" | "othello" | "platformer" | "flappy" | "bowling" | "dino", level: number): PyHooks {
+  if (kind === "checkers") return checkersHooks(level);
+  if (kind === "othello") return othelloHooks(level);
   if (kind === "platformer") return platformerHooks(level);
   if (kind === "flappy") return flappyHooks(level);
-  if (kind === "city") return cityHooks(level);
+  if (kind === "bowling") return bowlingHooks(level);
   return dinoHooks(level);
 }
