@@ -7,7 +7,7 @@ export const Route = createFileRoute("/studio")({
       { title: "Phone Game Studio — Python Mini-Games" },
       { name: "description", content: "Split-screen coding missions with live phone previews, including checkers, othello, and a platformer." },
       { property: "og:title", content: "Phone Game Studio — Python Mini-Games" },
-      { property: "og:description", content: "Build Mad Libs, Checkers, Rock Paper Scissors, Guess the Number, and Word Guess." },
+      { property: "og:description", content: "Build Mad Libs, an ASCII decoder, Checkers, Rock Paper Scissors, Guess the Number, and Word Guess." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

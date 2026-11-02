@@ -511,6 +511,21 @@ function isInt(value: PyValue): value is number {
   return typeof value === "number" && Number.isInteger(value);
 }
 
+function toInt(value: PyValue): number {
+  if (typeof value === "number") return Math.trunc(value);
+  const text = String(value ?? "").trim();
+  if (!/^-?\d+$/.test(text)) throw new PyError("int() needs a whole number. Use float() for decimals like 2.5.");
+  return Number.parseInt(text, 10);
+}
+
+function toFloat(value: PyValue): number {
+  if (typeof value === "number") return value;
+  const text = String(value ?? "").trim();
+  const n = Number.parseFloat(text);
+  if (!text || Number.isNaN(n)) throw new PyError("float() needs a number, like 2.5.");
+  return n;
+}
+
 type Env = Record<string, PyValue>;
 
 function* evalExpr(expr: Expr, env: Env, ctx: RunCtx): Generator<string, PyValue, string> {
@@ -616,10 +631,17 @@ function* evalCall(expr: Extract<Expr, { type: "call" }>, env: Env, ctx: RunCtx)
       const answer = yield prompt;
       return answer;
     }
-    if (name === "int") {
-      const n = Number.parseInt(String(args[0] ?? ""), 10);
-      if (Number.isNaN(n)) throw new PyError("int() needs a whole number.");
-      return n;
+    if (name === "int") return toInt(args[0] ?? null);
+    if (name === "float") return toFloat(args[0] ?? null);
+    if (name === "ord") {
+      const v = args[0];
+      if (typeof v !== "string" || [...v].length !== 1) throw new PyError('ord() needs one character, like ord("A").');
+      return v.codePointAt(0)!;
+    }
+    if (name === "chr") {
+      const n = args[0];
+      if (!isInt(n) || n < 0 || n > 0x10ffff) throw new PyError("chr() needs a whole number, like chr(65).");
+      return String.fromCodePoint(n);
     }
     if (name === "str") return pyDisplay(args[0] ?? null);
     if (name === "len") {
@@ -652,7 +674,7 @@ function* evalCall(expr: Extract<Expr, { type: "call" }>, env: Env, ctx: RunCtx)
     }
     throw new PyError(`random.${expr.callee.name} is not available here.`);
   }
-  throw new PyError("I can only call functions like print, input, int, and random.choice.");
+  throw new PyError("I can only call functions like print, input, int, float, ord, chr, and random.choice.");
 }
 
 function* evalBlock(body: Stmt[], env: Env, ctx: RunCtx): Generator<string, void, string> {

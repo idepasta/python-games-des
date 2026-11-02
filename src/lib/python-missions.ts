@@ -41,33 +41,38 @@ const game = (message: string): ValidationRule => ({ type: "game", message });
 export const pythonMissions: PythonMission[] = [
   {
     id: "mad-libs",
-    emoji: "📝",
+    emoji: "🦸",
     title: "Mad Libs",
     teaser: "Variables, input(), and f-strings",
-    story: "Build a silly story app. The phone will ask for words, then print a sentence using those words.",
+    story: `Write a chaotic news flash about a superhero.
+Pick a hero or a funny character, such as Spider-Man 🕷️, Deadpool 🟥, Shrek 🟢, or SpongeBob 🧽.
+The phone asks for a silly object 🍕 and a wild verb 💃.
+Then print() mash those words into one sentence with emojis.
+Tap the pictures on the phone, or type your own words.
+The weirder the combo, the better.`,
     steps: [
       {
         id: "var",
-        title: "Store a name",
-        prompt: "Create a variable called name and set it to a word in quotes, such as \"Sam\".",
-        hint: "Write name = \"Sam\"",
-        success: "You stored a word in a variable!",
-        starterCode: `# Mad Libs step 1
-# Store the hero name in a variable.
+        title: "Pick a hero",
+        prompt: "Create a variable called name and set it to a quoted hero or funny character, such as \"Spider-Man\", \"Deadpool\", or \"Shrek\".",
+        hint: "Write name = \"Spider-Man\"",
+        success: "Your hero is stored! 🦸",
+        starterCode: `# Superhero Mad Libs
+# Store a hero or a funny character.
 name = 
 `,
         rules: [
-          regex("name\\s*=\\s*['\"][^'\"]+['\"]", "Set name to a quoted word, like name = \"Sam\"."),
+          regex("name\\s*=\\s*['\"][^'\"]+['\"]", "Set name to a quoted hero, like name = \"Spider-Man\"."),
         ],
       },
       {
         id: "noun",
-        title: "Ask for a noun",
-        prompt: "Use input() to ask for a noun and save the answer in a variable called noun.",
-        hint: 'Write noun = input("Give me a noun: ")',
-        success: "The phone can now ask a question!",
-        starterCode: `name = "Sam"
-# Ask the player for a noun.
+        title: "Ask for a silly object",
+        prompt: "Use input() to ask for a noun (a thing, like pizza or rubber duck) and save it in noun. The phone shows emoji buttons for this question.",
+        hint: 'Write noun = input("Drop a silly object 🍕: ")',
+        success: "The phone can now ask for chaos! 🍕",
+        starterCode: `name = "Spider-Man"
+# Ask for a silly object.
 noun = 
 `,
         rules: [
@@ -77,13 +82,13 @@ noun =
       },
       {
         id: "verb",
-        title: "Ask for a verb",
-        prompt: "Ask for a second word. Save it in verb using input().",
-        hint: 'Write verb = input("Give me a verb: ")',
-        success: "Two questions are ready.",
-        starterCode: `name = "Sam"
-noun = input("Give me a noun: ")
-# Ask for a verb too.
+        title: "Ask for a wild verb",
+        prompt: "Ask for a verb (an action, like moonwalk or yeet) and save it in verb using input().",
+        hint: 'Write verb = input("Drop a wild verb 💃: ")',
+        success: "Two questions are ready. 💃",
+        starterCode: `name = "Spider-Man"
+noun = input("Drop a silly object 🍕: ")
+# Ask for a wild verb too.
 verb = 
 `,
         rules: [
@@ -92,14 +97,14 @@ verb =
       },
       {
         id: "story",
-        title: "Print the story",
-        prompt: "Use an f-string and print() to tell a story with name, noun, and verb.",
-        hint: 'Write print(f"{name} saw a {noun} and decided to {verb}!")',
-        success: "Mad Libs is finished. Try it on the phone!",
-        starterCode: `name = "Sam"
-noun = input("Give me a noun: ")
-verb = input("Give me a verb: ")
-# Put the words into one sentence.
+        title: "Print the news flash",
+        prompt: "Use an f-string and print() to mash name, noun, and verb into one chaotic sentence. Put at least one emoji in the printed story.",
+        hint: 'Write print(f"🦸 Breaking news: {name} yeeted a {noun} and had to {verb} on live TV! 😂")',
+        success: "The news flash is live. Try it on the phone! 📺",
+        starterCode: `name = "Spider-Man"
+noun = input("Drop a silly object 🍕: ")
+verb = input("Drop a wild verb 💃: ")
+# Mash the words into one sentence with emojis.
 print()
 `,
         rules: [
@@ -108,11 +113,105 @@ print()
           includes("{name}", "Put {name} inside the f-string."),
           includes("{noun}", "Put {noun} inside the f-string."),
           includes("{verb}", "Put {verb} inside the f-string."),
+          includesAny(["🦸", "😂", "😱", "💥", "💀", "✨", "📺", "🍕", "🕷️"], "Put at least one emoji in the printed story."),
           run(
-            ["dragon", "dance"],
-            ["Sam", "dragon", "dance"],
-            "Run the story so print() shows the name, noun, and verb.",
+            ["rubber duck", "moonwalk"],
+            ["rubber duck", "moonwalk"],
+            "Run the story so print() shows the noun and the verb.",
           ),
+        ],
+      },
+    ],
+  },
+  {
+    id: "ascii-decoder",
+    emoji: "🔡",
+    title: "ASCII Decoder",
+    teaser: "ASCII, input() text, int(), and float()",
+    story: `Computers store every letter as a number. That number system is called ASCII.
+A is 65. H is 72. I is 73. S is 83. a is 97.
+ord("A") reads the number. chr(65) turns a number back into A.
+input() always gives text, even if you type 7 or 65.
+int() turns text into a whole number so you can do math.
+float() turns text into a decimal, like 2.5.
+Tap a letter or a code on the phone, then decode the secret.`,
+    steps: [
+      {
+        id: "ord",
+        title: "Read a letter's number",
+        prompt: "Print the ASCII number for A with print(ord(\"A\")).",
+        hint: 'Write print(ord("A"))',
+        success: "A is 65. Every letter has a number.",
+        starterCode: `# Every letter has a secret number.
+print()
+`,
+        rules: [
+          includes("ord(", "Call ord() to read a letter's ASCII number."),
+          includes('"A"', 'Pass "A" to ord().'),
+          includes("print(", "Print the number so it shows on the phone."),
+          run([], ["65"], "print(ord(\"A\")) should show 65."),
+        ],
+      },
+      {
+        id: "chr",
+        title: "Turn a number into a letter",
+        prompt: "Decode 72 and 73. Print chr(72), then print chr(73), so the phone shows H then I.",
+        hint: "print(chr(72)) on one line, then print(chr(73)).",
+        success: "72 and 73 decode to HI.",
+        starterCode: `print(chr(65))
+`,
+        rules: [
+          includes("chr(72)", "Call chr(72) to get H."),
+          includes("chr(73)", "Call chr(73) to get I."),
+          run([], ["H", "I"], "The phone should print H and then I."),
+        ],
+      },
+      {
+        id: "text",
+        title: "input() is always text",
+        prompt: "Ask for a number with input() and save it in raw. Print raw + raw. If the player types 7, the phone should show 77, because the two answers are still words glued together.",
+        hint: 'raw = input("Type 7: ") then print(raw + raw)',
+        success: "7 + 7 became 77. That is text, not math.",
+        starterCode: `raw = input("Type 7: ")
+print(raw)
+`,
+        rules: [
+          includes("input(", "Call input() to read the typed number as text."),
+          includes("raw", "Save the answer in raw."),
+          includes("raw + raw", "Glue the text to itself with raw + raw."),
+          run(["7"], ["77"], "Typing 7 should print 77, because input() is text."),
+        ],
+      },
+      {
+        id: "int",
+        title: "Convert with int()",
+        prompt: "Ask for an ASCII code with int(input(...)), save it in code, then print(chr(code)). Typing 83 should print S.",
+        hint: 'code = int(input("Type an ASCII code: ")) then print(chr(code))',
+        success: "int() turned the text into a number, then chr() decoded S.",
+        starterCode: `raw = input("Type an ASCII code: ")
+print(raw)
+`,
+        rules: [
+          includes("int(", "Wrap input() with int() so the code is a whole number."),
+          includes("input(", "Read the typed code with input()."),
+          includes("chr(", "Decode the number with chr()."),
+          run(["83"], ["S"], "Typing 83 should print S."),
+        ],
+      },
+      {
+        id: "float",
+        title: "Convert with float()",
+        prompt: "Ask for a decimal price with float(input(...)), save it in price, then print price * 2. Typing 2.5 should print 5.",
+        hint: 'price = float(input("Price: ")) then print(price * 2)',
+        success: "float() turned the text into a decimal, so the math worked.",
+        starterCode: `price = input("Price: ")
+print(price)
+`,
+        rules: [
+          includes("float(", "Wrap input() with float() so the price is a decimal."),
+          includes("input(", "Read the typed price with input()."),
+          includes("* 2", "Multiply the price by 2."),
+          run(["2.5"], ["5"], "Typing 2.5 should print 5 after float() math."),
         ],
       },
     ],
@@ -202,7 +301,12 @@ while look_right() != "goal":
     emoji: "✂️",
     title: "Rock, Paper, Scissors",
     teaser: "if / elif / else and comparing variables",
-    story: "Play against the computer. Compare the player's choice with the computer's choice.",
+    story: `You play the phone at Rock, Paper, Scissors.
+🪨 rock beats ✂️ scissors.
+📄 paper beats 🪨 rock.
+✂️ scissors beats 📄 paper.
+Tap a picture when the phone asks. The same move is a tie.
+Your Python compares the words rock, paper, and scissors, then prints who won.`,
     steps: [
       {
         id: "import",
@@ -233,8 +337,8 @@ choices = []
       {
         id: "player",
         title: "Read the player",
-        prompt: "Ask the player for a move with input() and save it in player.",
-        hint: 'Write player = input("Rock, paper, or scissors? ")',
+        prompt: "Ask the player for a move with input() and save it in player. The phone shows 🪨 📄 ✂️ buttons for this question.",
+        hint: 'Write player = input("🪨 Rock, 📄 paper, or ✂️ scissors? ")',
         success: "The phone can hear the player's move.",
         starterCode: `import random
 choices = ["rock", "paper", "scissors"]
@@ -253,7 +357,7 @@ player =
         success: "The computer can play too.",
         starterCode: `import random
 choices = ["rock", "paper", "scissors"]
-player = input("Rock, paper, or scissors? ")
+player = input("🪨 Rock, 📄 paper, or ✂️ scissors? ")
 computer = 
 print()
 `,
@@ -265,17 +369,18 @@ print()
       {
         id: "compare",
         title: "Compare the moves",
-        prompt: "Use if, elif, and else to print Tie!, You win!, or You lose! by comparing player and computer.",
+        prompt: "Use if, elif, and else to print Tie! 🤝, You win! 🎉, or You lose! 😬 by comparing player and computer.",
         hint: "Start with if player == computer: then add elif rules for winning moves, and else for losing.",
         success: "The game can decide a winner!",
         starterCode: `import random
 choices = ["rock", "paper", "scissors"]
-player = input("Rock, paper, or scissors? ")
+player = input("🪨 Rock, 📄 paper, or ✂️ scissors? ")
 computer = random.choice(choices)
+print(f"You played {player}")
 print(f"Computer chose {computer}")
 # Compare player and computer.
 if player == computer:
-    print("Tie!")
+    print("Tie! 🤝")
 `,
         rules: [
           includes("if ", "Use an if to compare the two moves."),
@@ -884,13 +989,13 @@ run()
     emoji: "🎤",
     title: "Trap Quiz",
     teaser: "A quiz about Greek trap",
-    story: "Build a phone quiz about four Greek trap artists: Trannos, Light, Snick, and Rack. The phone asks for a name and checks it against the lineup.",
+    story: "Build a phone quiz about four Greek trap artists: Trannos, Light, Snik, and Rack. The phone asks for a name and checks it against the lineup.",
     steps: [
       {
         id: "lineup",
         title: "Store the lineup",
-        prompt: "Make a list called artists with these four names, in quotes: Trannos, Light, Snick, Rack.",
-        hint: 'artists = ["Trannos", "Light", "Snick", "Rack"]',
+        prompt: "Make a list called artists with these four names, in quotes: Trannos, Light, Snik, Rack.",
+        hint: 'artists = ["Trannos", "Light", "Snik", "Rack"]',
         success: "The lineup is stored.",
         starterCode: `# Greek trap quiz
 artists = 
@@ -899,7 +1004,7 @@ artists =
           includes("artists", "Name the list artists."),
           includes("Trannos", "Put Trannos in the list."),
           includes("Light", "Put Light in the list."),
-          includes("Snick", "Put Snick in the list."),
+          includes("Snik", "Put Snik in the list."),
           includes("Rack", "Put Rack in the list."),
         ],
       },
@@ -909,7 +1014,7 @@ artists =
         prompt: "Print Greek trap quiz, then use input() to ask for a trapper and save the answer in guess.",
         hint: 'print("Greek trap quiz") and guess = input("Name one trapper: ")',
         success: "The phone can ask the first question.",
-        starterCode: `artists = ["Trannos", "Light", "Snick", "Rack"]
+        starterCode: `artists = ["Trannos", "Light", "Snik", "Rack"]
 # Ask the player to name a trapper.
 `,
         rules: [
@@ -924,7 +1029,7 @@ artists =
         prompt: "Ask for a name until guess is in artists. If it is, print Correct! If it is not, print Try another name. and ask again.",
         hint: 'guess = "" then while not guess in artists: ask with input(), and use if guess in artists.',
         success: "A wrong name asks again. A lineup name is Correct!",
-        starterCode: `artists = ["Trannos", "Light", "Snick", "Rack"]
+        starterCode: `artists = ["Trannos", "Light", "Snik", "Rack"]
 guess = input("Name one trapper: ")
 `,
         rules: [
@@ -942,7 +1047,7 @@ guess = input("Name one trapper: ")
         prompt: "Start score at 0. For each artist, keep asking until guess matches that name. A wrong guess prints Nope! and asks again. A match prints Correct!, adds 1 to score, then moves on. After every name, print the score.",
         hint: 'while not guess == name: ask again. score = score + 1 when guess == name.',
         success: "The quiz keeps score.",
-        starterCode: `artists = ["Trannos", "Light", "Snick", "Rack"]
+        starterCode: `artists = ["Trannos", "Light", "Snik", "Rack"]
 score = 0
 for name in artists:
     guess = input("Name a Greek trapper: ")
@@ -954,7 +1059,7 @@ print(score)
           includes("if ", "Check each answer with if."),
           includes("score + 1", "Add 1 to score for a match."),
           includes("Nope!", "Print Nope! when the name is wrong."),
-          run(["Nope", "Trannos", "Light", "Snick", "Rack"], ["Nope!", "Correct!", "4"], "A wrong name should ask again, then four matches score 4."),
+          run(["Nope", "Trannos", "Light", "Snik", "Rack"], ["Nope!", "Correct!", "4"], "A wrong name should ask again, then four matches score 4."),
         ],
       },
     ],

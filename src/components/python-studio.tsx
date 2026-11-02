@@ -233,6 +233,7 @@ export function PythonStudio({ mission, onBack }: { mission: PythonMission; onBa
               <PythonPhone
                 title={mission.title}
                 session={session}
+                playMode={mission.id === "rps" ? "rps" : mission.id === "mad-libs" ? "mad-libs" : mission.id === "ascii-decoder" ? "ascii" : undefined}
                 overlay={overlay}
                 onClearOverlay={() => setOverlay(null)}
                 onReply={(value) => { session.provideInput(value); bump((n) => n + 1); }}

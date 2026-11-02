@@ -14,10 +14,10 @@ describe("hint button", () => {
   });
 });
 
-const madLibs = `name = "Sam"
-noun = input("Give me a noun: ")
-verb = input("Give me a verb: ")
-print(f"{name} saw a {noun} and decided to {verb}!")
+const madLibs = `name = "Spider-Man"
+noun = input("Drop a silly object 🍕: ")
+verb = input("Drop a wild verb 💃: ")
+print(f"🦸 Breaking news: {name} yeeted a {noun} and had to {verb} on live TV! 😂")
 `;
 
 const eightBall = `import random
@@ -28,19 +28,20 @@ print(random.choice(answers))
 
 const rps = `import random
 choices = ["rock", "paper", "scissors"]
-player = input("Rock, paper, or scissors? ")
+player = input("🪨 Rock, 📄 paper, or ✂️ scissors? ")
 computer = random.choice(choices)
+print(f"You played {player}")
 print(f"Computer chose {computer}")
 if player == computer:
-    print("Tie!")
+    print("Tie! 🤝")
 elif player == "rock" and computer == "scissors":
-    print("You win!")
+    print("You win! 🎉")
 elif player == "paper" and computer == "rock":
-    print("You win!")
+    print("You win! 🎉")
 elif player == "scissors" and computer == "paper":
-    print("You win!")
+    print("You win! 🎉")
 else:
-    print("You lose!")
+    print("You lose! 😬")
 `;
 
 const guess = `import random
@@ -83,7 +84,7 @@ describe("python mini interpreter", () => {
   it("maps print and input, including f-strings", () => {
     const result = runPython(madLibs, ["dragon", "dance"]);
     expect(result.status).toBe("done");
-    expect(result.prints.join(" ")).toContain("Sam saw a dragon and decided to dance!");
+    expect(result.prints.join(" ")).toContain("🦸 Breaking news: Spider-Man yeeted a dragon and had to dance on live TV! 😂");
   });
 
   it("pauses on input until an answer is given", () => {
@@ -119,12 +120,24 @@ describe("python mini interpreter", () => {
   it("blocks dangerous names", () => {
     expect(runPython("eval('1')\n").status).toBe("error");
   });
+
+  it("reads ASCII codes and converts input text to int and float", () => {
+    expect(runPython('print(ord("A"))\nprint(chr(72))\n').prints).toEqual(["65", "H"]);
+    const glued = runPython("raw = input()\nprint(raw + raw)\n", ["7"]);
+    expect(glued.prints).toEqual(["77"]);
+    const whole = runPython('n = int(input())\nprint(n + 1)\n', ["7"]);
+    expect(whole.prints).toEqual(["8"]);
+    const decimal = runPython('n = float(input())\nprint(n * 2)\n', ["2.5"]);
+    expect(decimal.prints).toEqual(["5"]);
+    expect(runPython('print(int("2.5"))\n').status).toBe("error");
+  });
 });
 
 describe("python mission curriculum", () => {
   it("has five text games plus the canvas games", () => {
     expect(pythonMissions.map((m) => m.id)).toEqual([
       "mad-libs",
+      "ascii-decoder",
       "checkers",
       "rps",
       "guess",
@@ -179,7 +192,10 @@ jump()
 wait(0.7)
 run(3)
 `;
-    const solutions = [madLibs, checkersCapture, rps, guess, hangman, othelloTwice, platformTiming];
+    const asciiFloat = `price = float(input("Price: "))
+print(price * 2)
+`;
+    const solutions = [madLibs, asciiFloat, checkersCapture, rps, guess, hangman, othelloTwice, platformTiming];
     pythonMissions.slice(0, solutions.length).forEach((mission, i) => {
       const last = mission.steps[mission.steps.length - 1]!;
       const check = validatePythonStep(last, solutions[i]!);

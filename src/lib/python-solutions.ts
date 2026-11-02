@@ -1,17 +1,31 @@
 const SOLUTIONS: Record<string, string> = {
-  "mad-libs/var": `name = "Sam"
+  "mad-libs/var": `name = "Spider-Man"
 `,
-  "mad-libs/noun": `name = "Sam"
-noun = input("Give me a noun: ")
+  "mad-libs/noun": `name = "Spider-Man"
+noun = input("Drop a silly object 🍕: ")
 `,
-  "mad-libs/verb": `name = "Sam"
-noun = input("Give me a noun: ")
-verb = input("Give me a verb: ")
+  "mad-libs/verb": `name = "Spider-Man"
+noun = input("Drop a silly object 🍕: ")
+verb = input("Drop a wild verb 💃: ")
 `,
-  "mad-libs/story": `name = "Sam"
-noun = input("Give me a noun: ")
-verb = input("Give me a verb: ")
-print(f"{name} saw a {noun} and decided to {verb}!")
+  "mad-libs/story": `name = "Spider-Man"
+noun = input("Drop a silly object 🍕: ")
+verb = input("Drop a wild verb 💃: ")
+print(f"🦸 Breaking news: {name} yeeted a {noun} and had to {verb} on live TV! 😂")
+`,
+  "ascii-decoder/ord": `print(ord("A"))
+`,
+  "ascii-decoder/chr": `print(chr(72))
+print(chr(73))
+`,
+  "ascii-decoder/text": `raw = input("Type 7: ")
+print(raw + raw)
+`,
+  "ascii-decoder/int": `code = int(input("Type an ASCII code: "))
+print(chr(code))
+`,
+  "ascii-decoder/float": `price = float(input("Price: "))
+print(price * 2)
 `,
   "checkers/slide": `move_right()
 move_right()
@@ -36,29 +50,30 @@ choices = ["rock", "paper", "scissors"]
 `,
   "rps/player": `import random
 choices = ["rock", "paper", "scissors"]
-player = input("Rock, paper, or scissors? ")
+player = input("🪨 Rock, 📄 paper, or ✂️ scissors? ")
 `,
   "rps/computer": `import random
 choices = ["rock", "paper", "scissors"]
-player = input("Rock, paper, or scissors? ")
+player = input("🪨 Rock, 📄 paper, or ✂️ scissors? ")
 computer = random.choice(choices)
-print(computer)
+print(f"Computer chose {computer}")
 `,
   "rps/compare": `import random
 choices = ["rock", "paper", "scissors"]
-player = input("Rock, paper, or scissors? ")
+player = input("🪨 Rock, 📄 paper, or ✂️ scissors? ")
 computer = random.choice(choices)
+print(f"You played {player}")
 print(f"Computer chose {computer}")
 if player == computer:
-    print("Tie!")
+    print("Tie! 🤝")
 elif player == "rock" and computer == "scissors":
-    print("You win!")
+    print("You win! 🎉")
 elif player == "paper" and computer == "rock":
-    print("You win!")
+    print("You win! 🎉")
 elif player == "scissors" and computer == "paper":
-    print("You win!")
+    print("You win! 🎉")
 else:
-    print("You lose!")
+    print("You lose! 😬")
 `,
   "guess/import": `import random
 `,
@@ -242,13 +257,13 @@ run()
         run()
 run()
 `,
-  "trap-quiz/lineup": `artists = ["Trannos", "Light", "Snick", "Rack"]
+  "trap-quiz/lineup": `artists = ["Trannos", "Light", "Snik", "Rack"]
 `,
-  "trap-quiz/ask": `artists = ["Trannos", "Light", "Snick", "Rack"]
+  "trap-quiz/ask": `artists = ["Trannos", "Light", "Snik", "Rack"]
 print("Greek trap quiz")
 guess = input("Name one trapper: ")
 `,
-  "trap-quiz/check": `artists = ["Trannos", "Light", "Snick", "Rack"]
+  "trap-quiz/check": `artists = ["Trannos", "Light", "Snik", "Rack"]
 guess = ""
 while not guess in artists:
     guess = input("Name one trapper: ")
@@ -257,7 +272,7 @@ while not guess in artists:
     else:
         print("Try another name.")
 `,
-  "trap-quiz/score": `artists = ["Trannos", "Light", "Snick", "Rack"]
+  "trap-quiz/score": `artists = ["Trannos", "Light", "Snik", "Rack"]
 score = 0
 for name in artists:
     guess = ""
